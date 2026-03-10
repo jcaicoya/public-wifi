@@ -1,0 +1,48 @@
+# =========================
+# Build folders
+# =========================
+build/
+cmake-build-*/
+out/
+
+# =========================
+# CMake
+# =========================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# =========================
+# CLion
+# =========================
+.idea/
+*.iml
+
+# =========================
+# Visual Studio / MSVC
+# =========================
+*.vcxproj*
+*.pdb
+*.ilk
+*.obj
+*.idb
+
+# =========================
+# Qt runtime copied by CMake
+# =========================
+Qt6*.dll
+plugins/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Logs / temp
+# =========================
+*.log
+*.tmp
