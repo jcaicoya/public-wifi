@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1)
+cmake_minimum_required(VERSION 3.28)
 project(public_wifi)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -21,7 +21,9 @@ add_executable(public_wifi main.cpp
         MainWindow.cpp
         MainWindow.h
         ScreenPage.cpp
-        ScreenPage.h)
+        ScreenPage.h
+        MapView.cpp
+        MapView.h)
 
 target_link_libraries(public_wifi
         Qt::Core

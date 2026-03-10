@@ -11,6 +11,7 @@ class QPushButton;
 
 class ScreenPage;
 class TcpJsonLineServer;
+class MapView;
 
 class MainWindow : public QMainWindow
 {
@@ -43,6 +44,13 @@ private:
     void wireNavigation();
     void goTo(PageId pageId);
 
+    QString getLocalIpAddress() const;
+
+private slots:
+    void startRouterScripts();
+    void stopRouterScripts();
+
+private:
     QStackedWidget* m_stack = nullptr;
 
     ScreenPage* m_pageA = nullptr;
@@ -56,7 +64,7 @@ private:
     QTextEdit* m_rawTrafficViewB = nullptr;
 
     // C
-    QLabel* m_mapPlaceholderC = nullptr;
+    MapView* m_mapViewC = nullptr;
     QTextEdit* m_filteredTrafficViewC = nullptr;
 
     // D

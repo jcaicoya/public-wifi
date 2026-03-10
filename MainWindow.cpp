@@ -2,15 +2,19 @@
 
 #include "ScreenPage.h"
 #include "TcpJsonLineServer.h"
+#include "MapView.h"
 
 #include <QFrame>
 #include <QHBoxLayout>
+#include <QHostAddress>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QNetworkInterface>
+#include <QProcess>
 #include <QPushButton>
 #include <QSplitter>
 #include <QStackedWidget>
@@ -105,6 +109,9 @@ MainWindow::MainWindow(QWidget* parent)
             if (selectedDevice.isEmpty() || selectedDevice == device) {
                 m_filteredTrafficViewC->append(
                     QString("%1  %2  %3").arg(device, event, domain));
+                if (m_mapViewC) {
+                    m_mapViewC->addConnection(event);
+                }
             }
         }
     });
@@ -271,6 +278,12 @@ void MainWindow::buildPageA()
     auto* subtitleLabel = new QLabel("Imagen / animación inicial", m_pageA);
     subtitleLabel->setAlignment(Qt::AlignCenter);
 
+    auto* startRouterButton = new QPushButton("Start Router Scripts", m_pageA);
+    startRouterButton->setMinimumHeight(48);
+
+    auto* stopRouterButton = new QPushButton("Stop Router Scripts", m_pageA);
+    stopRouterButton->setMinimumHeight(48);
+
     auto* startButton = new QPushButton("Start", m_pageA);
     startButton->setMinimumHeight(48);
 
@@ -281,10 +294,15 @@ void MainWindow::buildPageA()
     m_pageA->contentLayout()->addWidget(introLabel);
     m_pageA->contentLayout()->addWidget(subtitleLabel);
     m_pageA->contentLayout()->addSpacing(20);
+    m_pageA->contentLayout()->addWidget(startRouterButton, 0, Qt::AlignCenter);
+    m_pageA->contentLayout()->addWidget(stopRouterButton, 0, Qt::AlignCenter);
+    m_pageA->contentLayout()->addSpacing(20);
     m_pageA->contentLayout()->addWidget(startButton, 0, Qt::AlignCenter);
     m_pageA->contentLayout()->addWidget(exitButton, 0, Qt::AlignCenter);
     m_pageA->contentLayout()->addStretch();
 
+    connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
+    connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
     connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
     connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
 }
@@ -356,13 +374,11 @@ void MainWindow::buildPageC()
     titleFont.setBold(true);
     mapTitle->setFont(titleFont);
 
-    m_mapPlaceholderC = new QLabel("MAP PLACEHOLDER", mapPane);
-    m_mapPlaceholderC->setAlignment(Qt::AlignCenter);
-    m_mapPlaceholderC->setFrameShape(QFrame::Box);
-    m_mapPlaceholderC->setMinimumHeight(400);
+    m_mapViewC = new MapView(mapPane);
+    m_mapViewC->setMinimumHeight(400);
 
     mapLayout->addWidget(mapTitle);
-    mapLayout->addWidget(m_mapPlaceholderC, 1);
+    mapLayout->addWidget(m_mapViewC, 1);
 
     auto* eventsPane = new QWidget(splitter);
     auto* eventsLayout = new QVBoxLayout(eventsPane);
@@ -464,3 +480,47 @@ void MainWindow::goTo(PageId pageId)
     m_stack->setCurrentIndex(static_cast<int>(pageId));
     statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
 }
+
+QString MainWindow::getLocalIpAddress() const
+{
+    const QHostAddress &localhost = QHostAddress(QHostAddress::LocalHost);
+    for (const QHostAddress &address : QNetworkInterface::allAddresses()) {
+        if (address.protocol() == QAbstractSocket::IPv4Protocol && address != localhost) {
+            // Prefer the 192.168.8.x network (Mango router default)
+            if (address.toString().startsWith("192.168.8.")) {
+                return address.toString();
+            }
+        }
+    }
+    // Fallback: return the first non-localhost IPv4
+    for (const QHostAddress &address : QNetworkInterface::allAddresses()) {
+         if (address.protocol() == QAbstractSocket::IPv4Protocol && address != localhost) {
+             return address.toString();
+         }
+    }
+    return "192.168.8.182"; // Hardcoded fallback
+}
+
+void MainWindow::startRouterScripts()
+{
+    QString localIp = getLocalIpAddress();
+    QString cmd = QString("nohup /root/send_traffic_events.sh %1 5555 >/dev/null 2>&1 & "
+                          "nohup /root/device_watch.sh %1 5556 >/dev/null 2>&1 &").arg(localIp);
+    
+    QStringList args;
+    args << "root@192.168.8.1" << cmd;
+    
+    QProcess::startDetached("ssh", args);
+    statusBar()->showMessage(QString("Sent start command to router scripts. (IP: %1)").arg(localIp), 3000);
+}
+
+void MainWindow::stopRouterScripts()
+{
+    QString cmd = "killall send_traffic_events.sh device_watch.sh";
+    QStringList args;
+    args << "root@192.168.8.1" << cmd;
+    
+    QProcess::startDetached("ssh", args);
+    statusBar()->showMessage("Sent stop command to router scripts.", 3000);
+}
+
