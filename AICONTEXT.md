@@ -1,4 +1,3 @@
-
 # AI Context – Public Wi‑Fi Cybershow
 
 This file summarizes the project context so that a new AI session can continue development quickly.
@@ -28,7 +27,7 @@ Application
 
 C++  
 Qt 6  
-Qt Widgets  
+Qt Widgets (QPainter, QGraphicsView concepts)
 CMake
 
 Development environment
@@ -70,54 +69,13 @@ Ports used:
 
 ---
 
-# Router Scripts
-
-Traffic script
-
-/root/send_traffic_events.sh
-
-Reads dnsmasq logs and emits JSON events such as:
-
-{
- "ts":1773062293,
- "device":"iPhone",
- "ip":"192.168.8.185",
- "event":"SEARCH",
- "domain":"google.com"
-}
-
-Device script
-
-/root/device_watch.sh
-
-Uses:
-
-iwinfo ra0 assoclist
-
-and
-
-/tmp/dhcp.leases
-
-to detect Wi‑Fi connections.
-
-Example JSON output:
-
-{
- "type":"device",
- "action":"connected",
- "device":"iPhone",
- "ip":"192.168.8.185"
-}
-
----
-
 # Qt Application Structure
 
 The application currently contains five screens:
 
-A – Intro  
+A – Intro (Controls for Router & Demo Mode)
 B – Devices + raw router messages  
-C – Device detail view  
+C – Map Visualization and device event detail view
 D – Statistics view  
 E – Encryption demonstration
 
@@ -129,15 +87,6 @@ Navigation shortcuts:
 4 → D  
 5 → E
 
-Screen B shows:
-
-- device list
-- raw router JSON messages
-
-Screen C shows:
-
-- traffic from the selected device
-
 ---
 
 # Current Implementation Status
@@ -145,45 +94,34 @@ Screen C shows:
 Working
 
 - TCP servers implemented
+- JSON parsing extracted into core `processTrafficEvent` and `processDeviceEvent`
 - Router scripts functioning
-- Live JSON events received
-- Device detection working
-- Multi‑screen navigation implemented
-
-Partially implemented
-
-- device list population logic
-- device selection filtering
+- Remote Router Control (SSH background commands via `QProcess`)
+- Virtual Router / Demo Mode (`QTimer` injecting events from `demo_events.json`)
+- Device list population and selection UI auto-navigation
+- Custom `MapView` widget drawing a low-poly geometric world map using `QPainterPath`
+- Animated traffic connections from fixed origin (Asturias, Spain) to remote geographic regions (North America, Europe, Asia, etc.)
+- Visual region highlighting on packet arrival
 
 Not implemented yet
 
-- map visualization
-- animated connections
-- statistics dashboard
-- encryption demonstration logic
+- statistics dashboard logic (data aggregation)
+- encryption demonstration logic (simulating the attempt and fail)
 
 ---
 
 # Planned Features
 
-Visualization
-
-Display a world or Europe map showing:
-
-phone → remote services
-
-Animated connections.
-
 Event classification
 
-Current detected services:
+Current detected services mapped to regions:
 
-SEARCH  
-AMAZON  
-WHATSAPP  
-VIDEO  
-APPLE  
-MICROSOFT
+SEARCH -> North America
+AMAZON -> Europe
+WHATSAPP -> North Europe
+VIDEO -> Asia
+APPLE -> North America
+MICROSOFT -> North America
 
 Future additions may include TikTok, Instagram, etc.
 
@@ -212,8 +150,6 @@ without performing any real intrusion.
 
 # Recommended Next Development Steps
 
-1. Implement map visualization on screen C
-2. Aggregate traffic events for statistics screen
-3. Improve router scripts (persistent connection)
-4. Design visual animations for traffic flows
-
+1. Aggregate traffic events to build the visual Statistics Dashboard (Screen D)
+2. Implement the Encryption Demo logic to show "locked" traffic (Screen E)
+3. Improve router scripts (ensure persistent connection and reliability)

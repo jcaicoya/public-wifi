@@ -1,4 +1,3 @@
-
 # Public Wi-Fi Cybershow
 
 Educational / theatrical demonstration of public Wi-Fi privacy risks.
@@ -42,9 +41,9 @@ connected, disconnected
 
 The application uses **Qt Widgets** and contains five screens.
 
-A — Intro / start screen  
+A — Intro / start screen (Controls router scripts & Demo Mode)
 B — Devices + raw router traffic  
-C — Detailed view of selected device  
+C — Detailed map visualization of selected device  
 D — Statistics / historical view  
 E — Encryption demonstration (WhatsApp)
 
@@ -63,7 +62,7 @@ Keyboard shortcuts:
 Requirements
 
 - Qt 6
-- CMake
+- CMake (3.28+)
 - MSVC (Windows) or Clang/GCC (Linux)
 
 Example build:
@@ -72,10 +71,6 @@ mkdir build
 cd build
 cmake ..
 cmake --build .
-
-Typical Qt installation path on Windows:
-
-C:/Qt/6.x/msvc2022_64
 
 ---
 
@@ -89,59 +84,17 @@ Connect to the router:
 
 ssh root@192.168.8.1
 
----
+### Remote Router Control
 
-# Router Scripts
-
-Traffic events script
-
-/root/send_traffic_events.sh <host> <port>
-
-Example:
-
-/root/send_traffic_events.sh 192.168.8.182 5555
-
-This script reads DNS logs and converts them into JSON traffic events.
-
-Example output:
-
-{"ts":1773062293,"device":"iPhone","ip":"192.168.8.185","event":"SEARCH","domain":"google.com"}
+The Qt Application can automatically start and stop the router scripts via SSH in the background. To enable this, SSH keys must be set up so the PC can access the router without a password prompt.
 
 ---
 
-Device connection script
+# Demo Mode (Virtual Router)
 
-/root/device_watch.sh <host> <port>
+The application includes a built-in "Demo Mode" that acts as a Virtual Router. When activated from Screen A, it parses an embedded `demo_events.json` file and injects events into the core processing pipeline every 1.5 seconds. 
 
-Example:
-
-/root/device_watch.sh 192.168.8.182 5556
-
-This monitors Wi‑Fi association and reports when devices connect or disconnect.
-
-Example:
-
-{"type":"device","action":"connected","device":"iPhone","ip":"192.168.8.185"}
-
----
-
-# Running the Full System
-
-1. Start the Qt application
-
-2. Connect to the router via SSH
-
-3. Start both router scripts (two terminals recommended)
-
-/root/send_traffic_events.sh 192.168.8.182 5555
-
-/root/device_watch.sh 192.168.8.182 5556
-
-4. Connect the demonstration phone to the router Wi‑Fi
-
-5. Start browsing (Google, Amazon, WhatsApp, etc.)
-
-Events will appear live in the UI.
+This completely simulates a live show environment without needing to connect a physical phone or router.
 
 ---
 
@@ -159,15 +112,20 @@ The purpose is **education and awareness**, not intrusion.
 
 # Current Status
 
-Working prototype:
+Working features:
 
 - Qt application running
+- TCP servers and JSON parsing implemented
 - Router scripts producing events
-- Live traffic displayed
-- Device connection detection implemented
+- Live traffic displayed in raw logs
+- Device connection detection and filtering implemented
 - Multi‑screen navigation operational
+- **Remote SSH control of router scripts**
+- **Dynamic low-poly map visualization with geographic regions**
+- **Animated data packet flows and region highlights**
+- **Virtual Router (Demo Mode) for testing**
 
-Next milestone:
+Next milestones:
 
-Map visualization of traffic connections.
-
+1. Aggregate traffic events for the statistics screen (Screen D).
+2. Implement the Encryption Demo locked screen logic (Screen E).
