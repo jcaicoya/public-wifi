@@ -2,12 +2,14 @@
 
 #include <QMainWindow>
 #include <QHash>
+#include <QJsonArray>
 
 class QStackedWidget;
 class QListWidget;
 class QTextEdit;
 class QLabel;
 class QPushButton;
+class QTimer;
 
 class ScreenPage;
 class TcpJsonLineServer;
@@ -45,11 +47,14 @@ private:
     void goTo(PageId pageId);
 
     QString getLocalIpAddress() const;
+    void processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj);
+    void processDeviceEvent(const QJsonObject& obj);
 
 private slots:
     void startRouterScripts();
     void stopRouterScripts();
     void startDemoMode();
+    void onDemoTimerTick();
 
 private:
     QStackedWidget* m_stack = nullptr;
@@ -77,4 +82,9 @@ private:
     // Optional next-step integration
     TcpJsonLineServer* m_trafficServer = nullptr;
     TcpJsonLineServer* m_deviceServer = nullptr;
+
+    // Demo Mode state
+    QTimer* m_demoTimer = nullptr;
+    QJsonArray m_demoEvents;
+    int m_demoIndex = 0;
 };

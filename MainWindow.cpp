@@ -8,6 +8,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHostAddress>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QKeyEvent>
@@ -21,6 +22,7 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTextEdit>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QDebug>
@@ -59,62 +61,7 @@ MainWindow::MainWindow(QWidget* parent)
             qWarning() << "Invalid traffic JSON:" << line;
             return;
         }
-
-        const QJsonObject obj = doc.object();
-        qDebug() << "[TRAFFIC]" << obj;
-
-        const QString device = obj.value("device").toString().trimmed();
-        const QString event = obj.value("event").toString().trimmed();
-        const QString domain = obj.value("domain").toString().trimmed();
-        const QString ip = obj.value("ip").toString().trimmed();
-
-        if (m_rawTrafficViewB) {
-            m_rawTrafficViewB->append(QString::fromUtf8(line));
-        }
-
-        // Poblar lista de devices también desde tráfico
-        if (m_devicesListB && !device.isEmpty()) {
-            bool alreadyPresent = false;
-
-            for (int i = 0; i < m_devicesListB->count(); ++i) {
-                QListWidgetItem* item = m_devicesListB->item(i);
-                if (item && item->text() == device) {
-                    alreadyPresent = true;
-                    if (!ip.isEmpty()) {
-                        item->setToolTip(ip);
-                    }
-                    break;
-                }
-            }
-
-            if (!alreadyPresent) {
-                auto* item = new QListWidgetItem(device);
-                item->setToolTip(ip);
-                m_devicesListB->addItem(item);
-                qDebug() << "Device added from traffic:" << device << ip
-                         << "count=" << m_devicesListB->count();
-
-                if (m_devicesListB->count() == 1) {
-                    m_devicesListB->setCurrentItem(item);
-                }
-            }
-        }
-
-        // En C mostramos solo el tráfico del device seleccionado
-        if (m_filteredTrafficViewC) {
-            QString selectedDevice;
-            if (m_devicesListB && m_devicesListB->currentItem()) {
-                selectedDevice = m_devicesListB->currentItem()->text();
-            }
-
-            if (selectedDevice.isEmpty() || selectedDevice == device) {
-                m_filteredTrafficViewC->append(
-                    QString("%1  %2  %3").arg(device, event, domain));
-                if (m_mapViewC) {
-                    m_mapViewC->addConnection(event);
-                }
-            }
-        }
+        processTrafficEvent(line, doc.object());
     });
 
     connect(m_deviceServer, &TcpJsonLineServer::lineReceived,
@@ -124,58 +71,7 @@ MainWindow::MainWindow(QWidget* parent)
             qWarning() << "Invalid device JSON:" << line;
             return;
         }
-
-        const QJsonObject obj = doc.object();
-        qDebug() << "[DEVICE]" << obj;
-
-        const QString device = obj.value("device").toString().trimmed();
-        const QString action = obj.value("action").toString().trimmed();
-        const QString ip = obj.value("ip").toString().trimmed();
-
-        if (!m_devicesListB || device.isEmpty()) {
-            return;
-        }
-
-        QListWidgetItem* foundItem = nullptr;
-        for (int i = 0; i < m_devicesListB->count(); ++i) {
-            QListWidgetItem* item = m_devicesListB->item(i);
-            if (item && item->text() == device) {
-                foundItem = item;
-                break;
-            }
-        }
-
-        if (action == "connected") {
-            if (!foundItem) {
-                auto* item = new QListWidgetItem(device);
-                item->setToolTip(ip);
-                m_devicesListB->addItem(item);
-                foundItem = item;
-                qDebug() << "Device added from device event:" << device << ip
-                         << "count=" << m_devicesListB->count();
-            }
-
-            if (foundItem) {
-                foundItem->setForeground(Qt::black);
-                foundItem->setBackground(Qt::green);
-                if (!ip.isEmpty()) {
-                    foundItem->setToolTip(ip);
-                }
-            }
-
-            if (m_devicesListB->count() == 1 && !m_devicesListB->currentItem()) {
-                m_devicesListB->setCurrentItem(foundItem);
-            }
-        }
-        else if (action == "disconnected") {
-            if (foundItem) {
-                foundItem->setForeground(Qt::darkGray);
-                foundItem->setBackground(Qt::lightGray);
-                if (!ip.isEmpty()) {
-                    foundItem->setToolTip(ip);
-                }
-            }
-        }
+        processDeviceEvent(doc.object());
     });
 
     connect(m_trafficServer, &TcpJsonLineServer::errorOccurred,
@@ -216,6 +112,118 @@ MainWindow::MainWindow(QWidget* parent)
 
     if (!m_deviceServer->start()) {
         qWarning() << "Device server failed to start";
+    }
+}
+
+void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj)
+{
+    qDebug() << "[TRAFFIC]" << obj;
+
+    const QString device = obj.value("device").toString().trimmed();
+    const QString event = obj.value("event").toString().trimmed();
+    const QString domain = obj.value("domain").toString().trimmed();
+    const QString ip = obj.value("ip").toString().trimmed();
+
+    if (m_rawTrafficViewB) {
+        m_rawTrafficViewB->append(QString::fromUtf8(rawLine));
+    }
+
+    // Poblar lista de devices también desde tráfico
+    if (m_devicesListB && !device.isEmpty()) {
+        bool alreadyPresent = false;
+
+        for (int i = 0; i < m_devicesListB->count(); ++i) {
+            QListWidgetItem* item = m_devicesListB->item(i);
+            if (item && item->text() == device) {
+                alreadyPresent = true;
+                if (!ip.isEmpty()) {
+                    item->setToolTip(ip);
+                }
+                break;
+            }
+        }
+
+        if (!alreadyPresent) {
+            auto* item = new QListWidgetItem(device);
+            item->setToolTip(ip);
+            m_devicesListB->addItem(item);
+            qDebug() << "Device added from traffic:" << device << ip
+                     << "count=" << m_devicesListB->count();
+
+            if (m_devicesListB->count() == 1) {
+                m_devicesListB->setCurrentItem(item);
+            }
+        }
+    }
+
+    // En C mostramos solo el tráfico del device seleccionado
+    if (m_filteredTrafficViewC) {
+        QString selectedDevice;
+        if (m_devicesListB && m_devicesListB->currentItem()) {
+            selectedDevice = m_devicesListB->currentItem()->text();
+        }
+
+        if (selectedDevice.isEmpty() || selectedDevice == device) {
+            m_filteredTrafficViewC->append(
+                QString("%1  %2  %3").arg(device, event, domain));
+            if (m_mapViewC) {
+                m_mapViewC->addConnection(event);
+            }
+        }
+    }
+}
+
+void MainWindow::processDeviceEvent(const QJsonObject& obj)
+{
+    qDebug() << "[DEVICE]" << obj;
+
+    const QString device = obj.value("device").toString().trimmed();
+    const QString action = obj.value("action").toString().trimmed();
+    const QString ip = obj.value("ip").toString().trimmed();
+
+    if (!m_devicesListB || device.isEmpty()) {
+        return;
+    }
+
+    QListWidgetItem* foundItem = nullptr;
+    for (int i = 0; i < m_devicesListB->count(); ++i) {
+        QListWidgetItem* item = m_devicesListB->item(i);
+        if (item && item->text() == device) {
+            foundItem = item;
+            break;
+        }
+    }
+
+    if (action == "connected") {
+        if (!foundItem) {
+            auto* item = new QListWidgetItem(device);
+            item->setToolTip(ip);
+            m_devicesListB->addItem(item);
+            foundItem = item;
+            qDebug() << "Device added from device event:" << device << ip
+                     << "count=" << m_devicesListB->count();
+        }
+
+        if (foundItem) {
+            foundItem->setForeground(Qt::black);
+            foundItem->setBackground(Qt::green);
+            if (!ip.isEmpty()) {
+                foundItem->setToolTip(ip);
+            }
+        }
+
+        if (m_devicesListB->count() == 1 && !m_devicesListB->currentItem()) {
+            m_devicesListB->setCurrentItem(foundItem);
+        }
+    }
+    else if (action == "disconnected") {
+        if (foundItem) {
+            foundItem->setForeground(Qt::darkGray);
+            foundItem->setBackground(Qt::lightGray);
+            if (!ip.isEmpty()) {
+                foundItem->setToolTip(ip);
+            }
+        }
     }
 }
 
@@ -479,6 +487,10 @@ void MainWindow::wireNavigation()
             m_filteredTrafficViewC->clear();
         }
     });
+
+    connect(m_devicesListB, &QListWidget::itemClicked, this, [this]() {
+        goTo(PageId::C);
+    });
 }
 
 void MainWindow::goTo(PageId pageId)
@@ -532,6 +544,11 @@ void MainWindow::stopRouterScripts()
 
 void MainWindow::startDemoMode()
 {
+    if (m_demoTimer) {
+        qDebug() << "Demo mode already running.";
+        return;
+    }
+
     QFile file(":/demo_events.json");
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Could not open demo events file!";
@@ -541,10 +558,41 @@ void MainWindow::startDemoMode()
     QByteArray data = file.readAll();
     file.close();
 
-    qDebug() << "--- DEMO EVENTS ---";
-    qDebug().noquote() << data;
-    qDebug() << "-------------------";
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    if (!doc.isArray()) {
+        qWarning() << "Demo events file must contain a JSON array!";
+        return;
+    }
+
+    m_demoEvents = doc.array();
+    m_demoIndex = 0;
+
+    m_demoTimer = new QTimer(this);
+    connect(m_demoTimer, &QTimer::timeout, this, &MainWindow::onDemoTimerTick);
+    m_demoTimer->start(1500); // 1.5 seconds per event for better visual pacing
+
+    statusBar()->showMessage("Virtual Router (Demo Mode) Started", 3000);
+}
+
+void MainWindow::onDemoTimerTick()
+{
+    if (m_demoEvents.isEmpty()) return;
+
+    if (m_demoIndex >= m_demoEvents.size()) {
+        m_demoIndex = 0; // Loop the demo
+    }
+
+    QJsonObject obj = m_demoEvents[m_demoIndex].toObject();
     
-    statusBar()->showMessage("Loaded demo events (Check debug log)", 3000);
+    // Simulate what the real TCP server does
+    if (obj.contains("type") && obj["type"] == "device") {
+        processDeviceEvent(obj);
+    } else {
+        // Assume traffic event
+        QJsonDocument tempDoc(obj);
+        processTrafficEvent(tempDoc.toJson(QJsonDocument::Compact), obj);
+    }
+
+    m_demoIndex++;
 }
 
