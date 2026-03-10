@@ -5,11 +5,13 @@
 #include <QList>
 #include <QPointF>
 #include <QString>
+#include <QPainterPath>
 
 class QTimer;
 
 struct MapConnection {
     QString service;
+    QString targetRegion;
     QPointF start;
     QPointF end;
     qreal progress; // 0.0 to 1.0
@@ -33,8 +35,14 @@ private slots:
     void updateAnimations();
 
 private:
-    QHash<QString, QPointF> m_serviceLocations;
+    void buildMapRegions();
+
+    QHash<QString, QPainterPath> m_regions;
+    QHash<QString, qreal> m_regionHighlights;
+    QHash<QString, QString> m_serviceToRegion;
+    
     QList<MapConnection> m_connections;
     QTimer* m_animationTimer;
     int m_pulsePhase = 0;
+    QPointF m_phonePos;
 };
