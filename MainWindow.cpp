@@ -1,0 +1,466 @@
+#include "MainWindow.h"
+
+#include "ScreenPage.h"
+#include "TcpJsonLineServer.h"
+
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QKeyEvent>
+#include <QLabel>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QPushButton>
+#include <QSplitter>
+#include <QStackedWidget>
+#include <QStatusBar>
+#include <QTextEdit>
+#include <QVBoxLayout>
+#include <QWidget>
+#include <QDebug>
+
+namespace
+{
+QString pageName(MainWindow::PageId pageId)
+{
+    switch (pageId) {
+    case MainWindow::PageId::A: return "A";
+    case MainWindow::PageId::B: return "B";
+    case MainWindow::PageId::C: return "C";
+    case MainWindow::PageId::D: return "D";
+    case MainWindow::PageId::E: return "E";
+    }
+    return "?";
+}
+}
+
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent)
+{
+    buildUi();
+    wireNavigation();
+    goTo(PageId::A);
+
+    statusBar()->showMessage("Ready");
+
+    m_trafficServer = new TcpJsonLineServer(5555, this);
+    m_deviceServer = new TcpJsonLineServer(5556, this);
+
+    connect(m_trafficServer, &TcpJsonLineServer::lineReceived,
+            this, [this](const QByteArray& line) {
+        const QJsonDocument doc = QJsonDocument::fromJson(line);
+        if (!doc.isObject()) {
+            qWarning() << "Invalid traffic JSON:" << line;
+            return;
+        }
+
+        const QJsonObject obj = doc.object();
+        qDebug() << "[TRAFFIC]" << obj;
+
+        const QString device = obj.value("device").toString().trimmed();
+        const QString event = obj.value("event").toString().trimmed();
+        const QString domain = obj.value("domain").toString().trimmed();
+        const QString ip = obj.value("ip").toString().trimmed();
+
+        if (m_rawTrafficViewB) {
+            m_rawTrafficViewB->append(QString::fromUtf8(line));
+        }
+
+        // Poblar lista de devices también desde tráfico
+        if (m_devicesListB && !device.isEmpty()) {
+            bool alreadyPresent = false;
+
+            for (int i = 0; i < m_devicesListB->count(); ++i) {
+                QListWidgetItem* item = m_devicesListB->item(i);
+                if (item && item->text() == device) {
+                    alreadyPresent = true;
+                    if (!ip.isEmpty()) {
+                        item->setToolTip(ip);
+                    }
+                    break;
+                }
+            }
+
+            if (!alreadyPresent) {
+                auto* item = new QListWidgetItem(device);
+                item->setToolTip(ip);
+                m_devicesListB->addItem(item);
+                qDebug() << "Device added from traffic:" << device << ip
+                         << "count=" << m_devicesListB->count();
+
+                if (m_devicesListB->count() == 1) {
+                    m_devicesListB->setCurrentItem(item);
+                }
+            }
+        }
+
+        // En C mostramos solo el tráfico del device seleccionado
+        if (m_filteredTrafficViewC) {
+            QString selectedDevice;
+            if (m_devicesListB && m_devicesListB->currentItem()) {
+                selectedDevice = m_devicesListB->currentItem()->text();
+            }
+
+            if (selectedDevice.isEmpty() || selectedDevice == device) {
+                m_filteredTrafficViewC->append(
+                    QString("%1  %2  %3").arg(device, event, domain));
+            }
+        }
+    });
+
+    connect(m_deviceServer, &TcpJsonLineServer::lineReceived,
+            this, [this](const QByteArray& line) {
+        const QJsonDocument doc = QJsonDocument::fromJson(line);
+        if (!doc.isObject()) {
+            qWarning() << "Invalid device JSON:" << line;
+            return;
+        }
+
+        const QJsonObject obj = doc.object();
+        qDebug() << "[DEVICE]" << obj;
+
+        const QString device = obj.value("device").toString().trimmed();
+        const QString action = obj.value("action").toString().trimmed();
+        const QString ip = obj.value("ip").toString().trimmed();
+
+        if (!m_devicesListB || device.isEmpty()) {
+            return;
+        }
+
+        QListWidgetItem* foundItem = nullptr;
+        for (int i = 0; i < m_devicesListB->count(); ++i) {
+            QListWidgetItem* item = m_devicesListB->item(i);
+            if (item && item->text() == device) {
+                foundItem = item;
+                break;
+            }
+        }
+
+        if (action == "connected") {
+            if (!foundItem) {
+                auto* item = new QListWidgetItem(device);
+                item->setToolTip(ip);
+                m_devicesListB->addItem(item);
+                foundItem = item;
+                qDebug() << "Device added from device event:" << device << ip
+                         << "count=" << m_devicesListB->count();
+            }
+
+            if (foundItem) {
+                foundItem->setForeground(Qt::black);
+                foundItem->setBackground(Qt::green);
+                if (!ip.isEmpty()) {
+                    foundItem->setToolTip(ip);
+                }
+            }
+
+            if (m_devicesListB->count() == 1 && !m_devicesListB->currentItem()) {
+                m_devicesListB->setCurrentItem(foundItem);
+            }
+        }
+        else if (action == "disconnected") {
+            if (foundItem) {
+                foundItem->setForeground(Qt::darkGray);
+                foundItem->setBackground(Qt::lightGray);
+                if (!ip.isEmpty()) {
+                    foundItem->setToolTip(ip);
+                }
+            }
+        }
+    });
+
+    connect(m_trafficServer, &TcpJsonLineServer::errorOccurred,
+            this, [this](const QString& message) {
+        statusBar()->showMessage(message, 5000);
+        qWarning() << message;
+    });
+
+    connect(m_deviceServer, &TcpJsonLineServer::errorOccurred,
+            this, [this](const QString& message) {
+        statusBar()->showMessage(message, 5000);
+        qWarning() << message;
+    });
+
+    connect(m_trafficServer, &TcpJsonLineServer::clientConnected,
+            this, [this](const QString& peer) {
+        statusBar()->showMessage(QString("Traffic client connected: %1").arg(peer), 2000);
+    });
+
+    connect(m_deviceServer, &TcpJsonLineServer::clientConnected,
+            this, [this](const QString& peer) {
+        statusBar()->showMessage(QString("Device client connected: %1").arg(peer), 2000);
+    });
+
+    connect(m_trafficServer, &TcpJsonLineServer::clientDisconnected,
+            this, [this](const QString& peer) {
+        statusBar()->showMessage(QString("Traffic client disconnected: %1").arg(peer), 2000);
+    });
+
+    connect(m_deviceServer, &TcpJsonLineServer::clientDisconnected,
+            this, [this](const QString& peer) {
+        statusBar()->showMessage(QString("Device client disconnected: %1").arg(peer), 2000);
+    });
+
+    if (!m_trafficServer->start()) {
+        qWarning() << "Traffic server failed to start";
+    }
+
+    if (!m_deviceServer->start()) {
+        qWarning() << "Device server failed to start";
+    }
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* event)
+{
+    switch (event->key()) {
+    case Qt::Key_1:
+        goTo(PageId::A);
+        return;
+    case Qt::Key_2:
+        goTo(PageId::B);
+        return;
+    case Qt::Key_3:
+        goTo(PageId::C);
+        return;
+    case Qt::Key_4:
+        goTo(PageId::D);
+        return;
+    case Qt::Key_5:
+        goTo(PageId::E);
+        return;
+    default:
+        break;
+    }
+
+    QMainWindow::keyPressEvent(event);
+}
+
+void MainWindow::buildUi()
+{
+    setWindowTitle("Public Wi-Fi - Cybershow");
+    resize(1600, 900);
+
+    m_stack = new QStackedWidget(this);
+    setCentralWidget(m_stack);
+
+    buildPageA();
+    buildPageB();
+    buildPageC();
+    buildPageD();
+    buildPageE();
+
+    m_stack->addWidget(m_pageA);
+    m_stack->addWidget(m_pageB);
+    m_stack->addWidget(m_pageC);
+    m_stack->addWidget(m_pageD);
+    m_stack->addWidget(m_pageE);
+}
+
+void MainWindow::buildPageA()
+{
+    m_pageA = new ScreenPage("A", "Intro / Start", this);
+
+    auto* introLabel = new QLabel("CYBERSHOW\nPublic Wi-Fi", m_pageA);
+    introLabel->setAlignment(Qt::AlignCenter);
+    QFont font = introLabel->font();
+    font.setPointSize(28);
+    font.setBold(true);
+    introLabel->setFont(font);
+
+    auto* subtitleLabel = new QLabel("Imagen / animación inicial", m_pageA);
+    subtitleLabel->setAlignment(Qt::AlignCenter);
+
+    auto* startButton = new QPushButton("Start", m_pageA);
+    startButton->setMinimumHeight(48);
+
+    auto* exitButton = new QPushButton("Exit", m_pageA);
+    exitButton->setMinimumHeight(48);
+
+    m_pageA->contentLayout()->addStretch();
+    m_pageA->contentLayout()->addWidget(introLabel);
+    m_pageA->contentLayout()->addWidget(subtitleLabel);
+    m_pageA->contentLayout()->addSpacing(20);
+    m_pageA->contentLayout()->addWidget(startButton, 0, Qt::AlignCenter);
+    m_pageA->contentLayout()->addWidget(exitButton, 0, Qt::AlignCenter);
+    m_pageA->contentLayout()->addStretch();
+
+    connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
+    connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
+}
+
+void MainWindow::buildPageB()
+{
+    m_pageB = new ScreenPage("B", "Devices + Raw Traffic", this);
+
+    auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
+
+    auto* leftPane = new QWidget(splitter);
+    auto* leftLayout = new QVBoxLayout(leftPane);
+
+    auto* devicesTitle = new QLabel("Connected / Known Devices", leftPane);
+    QFont titleFont = devicesTitle->font();
+    titleFont.setPointSize(18);
+    titleFont.setBold(true);
+    devicesTitle->setFont(titleFont);
+
+    m_devicesListB = new QListWidget(leftPane);
+    m_devicesListB->setMinimumSize(300, 400);
+    m_devicesListB->setStyleSheet("background: #202020; color: white;");
+
+    leftLayout->addWidget(devicesTitle);
+    leftLayout->addWidget(m_devicesListB, 1);
+
+    auto* rightPane = new QWidget(splitter);
+    auto* rightLayout = new QVBoxLayout(rightPane);
+
+    auto* rawTitle = new QLabel("Router Messages (raw)", rightPane);
+    rawTitle->setFont(titleFont);
+
+    m_rawTrafficViewB = new QTextEdit(rightPane);
+    m_rawTrafficViewB->setReadOnly(true);
+
+    rightLayout->addWidget(rawTitle);
+    rightLayout->addWidget(m_rawTrafficViewB, 1);
+
+    splitter->addWidget(leftPane);
+    splitter->addWidget(rightPane);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 2);
+
+    m_pageB->contentLayout()->addWidget(splitter);
+
+    auto* toA = m_pageB->addNavButton("A");
+    auto* toC = m_pageB->addNavButton("C");
+    auto* toD = m_pageB->addNavButton("D");
+    auto* toE = m_pageB->addNavButton("E");
+
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::D); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::E); });
+}
+
+void MainWindow::buildPageC()
+{
+    m_pageC = new ScreenPage("C", "Selected Device Detail", this);
+
+    auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
+
+    auto* mapPane = new QWidget(splitter);
+    auto* mapLayout = new QVBoxLayout(mapPane);
+
+    auto* mapTitle = new QLabel("Map / Connections", mapPane);
+    QFont titleFont = mapTitle->font();
+    titleFont.setPointSize(18);
+    titleFont.setBold(true);
+    mapTitle->setFont(titleFont);
+
+    m_mapPlaceholderC = new QLabel("MAP PLACEHOLDER", mapPane);
+    m_mapPlaceholderC->setAlignment(Qt::AlignCenter);
+    m_mapPlaceholderC->setFrameShape(QFrame::Box);
+    m_mapPlaceholderC->setMinimumHeight(400);
+
+    mapLayout->addWidget(mapTitle);
+    mapLayout->addWidget(m_mapPlaceholderC, 1);
+
+    auto* eventsPane = new QWidget(splitter);
+    auto* eventsLayout = new QVBoxLayout(eventsPane);
+
+    auto* eventsTitle = new QLabel("Selected Device Events", eventsPane);
+    eventsTitle->setFont(titleFont);
+
+    m_filteredTrafficViewC = new QTextEdit(eventsPane);
+    m_filteredTrafficViewC->setReadOnly(true);
+
+    eventsLayout->addWidget(eventsTitle);
+    eventsLayout->addWidget(m_filteredTrafficViewC, 1);
+
+    splitter->addWidget(mapPane);
+    splitter->addWidget(eventsPane);
+    splitter->setStretchFactor(0, 2);
+    splitter->setStretchFactor(1, 1);
+
+    m_pageC->contentLayout()->addWidget(splitter);
+
+    auto* toA = m_pageC->addNavButton("A");
+    auto* toB = m_pageC->addNavButton("B");
+    auto* toD = m_pageC->addNavButton("D");
+    auto* toE = m_pageC->addNavButton("E");
+
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::D); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::E); });
+}
+
+void MainWindow::buildPageD()
+{
+    m_pageD = new ScreenPage("D", "Statistics / History", this);
+
+    auto* label = new QLabel("Statistics placeholder", m_pageD);
+    QFont font = label->font();
+    font.setPointSize(20);
+    font.setBold(true);
+    label->setFont(font);
+
+    m_statsPlaceholderD = new QTextEdit(m_pageD);
+    m_statsPlaceholderD->setReadOnly(true);
+    m_statsPlaceholderD->setPlainText(
+        "Here we will show:\n"
+        "- connection time\n"
+        "- visited services\n"
+        "- number of events\n"
+        "- maybe geographic counters\n");
+
+    m_pageD->contentLayout()->addWidget(label);
+    m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
+
+    auto* toA = m_pageD->addNavButton("A");
+    auto* toB = m_pageD->addNavButton("B");
+    auto* toC = m_pageD->addNavButton("C");
+
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+}
+
+void MainWindow::buildPageE()
+{
+    m_pageE = new ScreenPage("E", "Encrypted / Locked", this);
+
+    m_lockedPlaceholderE = new QLabel("WHATSAPP\nENCRYPTED\nLOCKED", m_pageE);
+    m_lockedPlaceholderE->setAlignment(Qt::AlignCenter);
+    QFont font = m_lockedPlaceholderE->font();
+    font.setPointSize(28);
+    font.setBold(true);
+    m_lockedPlaceholderE->setFont(font);
+    m_lockedPlaceholderE->setFrameShape(QFrame::Box);
+
+    m_pageE->contentLayout()->addStretch();
+    m_pageE->contentLayout()->addWidget(m_lockedPlaceholderE, 1);
+    m_pageE->contentLayout()->addStretch();
+
+    auto* toA = m_pageE->addNavButton("A");
+    auto* toB = m_pageE->addNavButton("B");
+    auto* toC = m_pageE->addNavButton("C");
+
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+}
+
+void MainWindow::wireNavigation()
+{
+    connect(m_devicesListB, &QListWidget::itemSelectionChanged, this, [this]() {
+        if (m_filteredTrafficViewC) {
+            m_filteredTrafficViewC->clear();
+        }
+    });
+}
+
+void MainWindow::goTo(PageId pageId)
+{
+    m_stack->setCurrentIndex(static_cast<int>(pageId));
+    statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
+}
