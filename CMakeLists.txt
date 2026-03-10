@@ -23,7 +23,8 @@ add_executable(public_wifi main.cpp
         ScreenPage.cpp
         ScreenPage.h
         MapView.cpp
-        MapView.h)
+        MapView.h
+        resources.qrc)
 
 target_link_libraries(public_wifi
         Qt::Core

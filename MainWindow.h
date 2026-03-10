@@ -49,6 +49,7 @@ private:
 private slots:
     void startRouterScripts();
     void stopRouterScripts();
+    void startDemoMode();
 
 private:
     QStackedWidget* m_stack = nullptr;

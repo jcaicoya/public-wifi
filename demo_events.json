@@ -1,0 +1,10 @@
+[
+  {"type":"device", "action":"connected", "device":"DemoPhone", "ip":"192.168.8.100"},
+  {"ts":1773062293, "device":"DemoPhone", "ip":"192.168.8.100", "event":"SEARCH", "domain":"google.com"},
+  {"ts":1773062294, "device":"DemoPhone", "ip":"192.168.8.100", "event":"WHATSAPP", "domain":"whatsapp.net"},
+  {"ts":1773062295, "device":"DemoPhone", "ip":"192.168.8.100", "event":"AMAZON", "domain":"amazon.es"},
+  {"ts":1773062296, "device":"DemoPhone", "ip":"192.168.8.100", "event":"APPLE", "domain":"apple.com"},
+  {"ts":1773062297, "device":"DemoPhone", "ip":"192.168.8.100", "event":"VIDEO", "domain":"netflix.com"},
+  {"ts":1773062298, "device":"DemoPhone", "ip":"192.168.8.100", "event":"MICROSOFT", "domain":"microsoft.com"},
+  {"type":"device", "action":"disconnected", "device":"DemoPhone", "ip":"192.168.8.100"}
+]

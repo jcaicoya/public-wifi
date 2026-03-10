@@ -4,6 +4,7 @@
 #include "TcpJsonLineServer.h"
 #include "MapView.h"
 
+#include <QFile>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHostAddress>
@@ -284,6 +285,9 @@ void MainWindow::buildPageA()
     auto* stopRouterButton = new QPushButton("Stop Router Scripts", m_pageA);
     stopRouterButton->setMinimumHeight(48);
 
+    auto* demoButton = new QPushButton("Demo Mode", m_pageA);
+    demoButton->setMinimumHeight(48);
+
     auto* startButton = new QPushButton("Start", m_pageA);
     startButton->setMinimumHeight(48);
 
@@ -296,6 +300,7 @@ void MainWindow::buildPageA()
     m_pageA->contentLayout()->addSpacing(20);
     m_pageA->contentLayout()->addWidget(startRouterButton, 0, Qt::AlignCenter);
     m_pageA->contentLayout()->addWidget(stopRouterButton, 0, Qt::AlignCenter);
+    m_pageA->contentLayout()->addWidget(demoButton, 0, Qt::AlignCenter);
     m_pageA->contentLayout()->addSpacing(20);
     m_pageA->contentLayout()->addWidget(startButton, 0, Qt::AlignCenter);
     m_pageA->contentLayout()->addWidget(exitButton, 0, Qt::AlignCenter);
@@ -303,6 +308,7 @@ void MainWindow::buildPageA()
 
     connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
     connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
+    connect(demoButton, &QPushButton::clicked, this, &MainWindow::startDemoMode);
     connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
     connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
 }
@@ -522,5 +528,23 @@ void MainWindow::stopRouterScripts()
     
     QProcess::startDetached("ssh", args);
     statusBar()->showMessage("Sent stop command to router scripts.", 3000);
+}
+
+void MainWindow::startDemoMode()
+{
+    QFile file(":/demo_events.json");
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Could not open demo events file!";
+        return;
+    }
+
+    QByteArray data = file.readAll();
+    file.close();
+
+    qDebug() << "--- DEMO EVENTS ---";
+    qDebug().noquote() << data;
+    qDebug() << "-------------------";
+    
+    statusBar()->showMessage("Loaded demo events (Check debug log)", 3000);
 }
 
