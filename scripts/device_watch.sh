@@ -9,8 +9,10 @@ if [ -z "$HOST" ] || [ -z "$PORT" ]; then
 fi
 
 STATE_FILE="/tmp/cybershow_wifi_state.txt"
+# Ensure state file exists
 touch "$STATE_FILE"
 
+# Function to get current MACs from Wi-Fi driver
 get_connected_macs() {
     iwinfo ra0 assoclist \
     | awk '
@@ -19,10 +21,10 @@ get_connected_macs() {
             if (mac != "00:00:00:00:00:00")
                 print mac
         }
-    ' \
-    | sort -u
+    ' | sort -u
 }
 
+# Function to get IP and Hostname from DHCP leases
 resolve_device() {
     MAC="$1"
     awk -v mac="$MAC" '
@@ -37,51 +39,100 @@ resolve_device() {
     ' /tmp/dhcp.leases
 }
 
+# Function to send JSON to Qt App
 send_event() {
     ACTION="$1"
     NAME="$2"
     IP="$3"
 
+    # Don't send completely empty events
+    if [ -z "$NAME" ] && [ -z "$IP" ]; then
+        return
+    fi
+
     [ -z "$NAME" ] && NAME="$IP"
 
     JSON_MSG="{\"type\":\"device\",\"action\":\"$ACTION\",\"device\":\"$NAME\",\"ip\":\"$IP\"}"
-    
-    # Print to console for SSH visibility
+
+    # Mirror to stderr so it shows up in Qt Node 01 Console
     echo "$JSON_MSG" >&2
-    
-    # Send to TCP server. Using a short timeout (-w 2) to not block if server is down
-    echo "$JSON_MSG" | nc -w 2 "$HOST" "$PORT"
+
+    # Send via TCP. Use timeout to prevent hanging.
+    echo "$JSON_MSG" | nc -w 1 "$HOST" "$PORT" >/dev/null 2>&1
 }
 
 echo "Starting device watch to $HOST:$PORT..." >&2
 
+# --- NEW: Announce already connected devices on startup ---
+CURRENT_MACS="$(get_connected_macs)"
+for mac in $CURRENT_MACS; do
+    # Skip empty lines
+    [ -z "$mac" ] && continue
+
+    DEVICE="$(resolve_device "$mac")"
+    if [ -n "$DEVICE" ]; then
+        NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
+        IP="$(echo "$DEVICE" | cut -d'|' -f2)"
+        send_event "connected" "$NAME" "$IP"
+    fi
+done
+# Save the initial state, ensuring we only save non-empty lines
+echo "$CURRENT_MACS" | sed '/^$/d' > "$STATE_FILE"
+
+# --- Main Watch Loop ---
 while true
 do
-    NEW="$(get_connected_macs)"
-    OLD="$(cat "$STATE_FILE" 2>/dev/null)"
+    NEW_MACS="$(get_connected_macs)"
+    OLD_MACS="$(cat "$STATE_FILE" 2>/dev/null)"
 
-    # New connections
-    for mac in $NEW; do
-        echo "$OLD" | grep -Fxq "$mac"
-        if [ $? -ne 0 ]; then
+    NEXT_STATE_FILE="/tmp/cybershow_wifi_state_next.txt"
+    > "$NEXT_STATE_FILE"
+
+    # 1. Check for New Connections
+    for mac in $NEW_MACS; do
+        [ -z "$mac" ] && continue
+
+        # Is this MAC missing from the OLD list?
+        if ! echo "$OLD_MACS" | grep -Fxq "$mac"; then
+
+            # It's a new connection. Try to resolve DHCP.
             DEVICE="$(resolve_device "$mac")"
-            NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
-            IP="$(echo "$DEVICE" | cut -d'|' -f2)"
-            send_event "connected" "$NAME" "$IP"
+
+            if [ -n "$DEVICE" ]; then
+                # DHCP is ready! Send event and add to state.
+                NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
+                IP="$(echo "$DEVICE" | cut -d'|' -f2)"
+                send_event "connected" "$NAME" "$IP"
+                echo "$mac" >> "$NEXT_STATE_FILE"
+            else
+                # DHCP isn't ready. Don't add to state file so we check again next loop.
+                echo "Waiting for DHCP lease for $mac..." >&2
+            fi
+        else
+            # We already know about this MAC. Keep it in the state.
+            echo "$mac" >> "$NEXT_STATE_FILE"
         fi
     done
 
-    # Disconnections
-    for mac in $OLD; do
-        echo "$NEW" | grep -Fxq "$mac"
-        if [ $? -ne 0 ]; then
+    # 2. Check for Disconnections
+    for mac in $OLD_MACS; do
+        [ -z "$mac" ] && continue
+
+        # Is this OLD MAC missing from the NEW list?
+        if ! echo "$NEW_MACS" | grep -Fxq "$mac"; then
             DEVICE="$(resolve_device "$mac")"
-            NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
-            IP="$(echo "$DEVICE" | cut -d'|' -f2)"
-            send_event "disconnected" "$NAME" "$IP"
+            if [ -n "$DEVICE" ]; then
+                NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
+                IP="$(echo "$DEVICE" | cut -d'|' -f2)"
+                send_event "disconnected" "$NAME" "$IP"
+            else
+                send_event "disconnected" "$mac" "unknown"
+            fi
         fi
     done
 
-    printf '%s\n' "$NEW" > "$STATE_FILE"
+    # Overwrite old state with the new state, stripping any blank lines
+    sed '/^$/d' "$NEXT_STATE_FILE" > "$STATE_FILE"
+
     sleep 2
 done

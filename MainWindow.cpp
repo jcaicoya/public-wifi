@@ -117,6 +117,11 @@ MainWindow::MainWindow(QWidget* parent)
     }
 }
 
+MainWindow::~MainWindow()
+{
+    stopRouterScripts();
+}
+
 void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj)
 {
     qDebug() << "[TRAFFIC]" << obj;
@@ -714,6 +719,9 @@ void MainWindow::startSshConsole(QProcess*& proc, QTextEdit* console, const QStr
 void MainWindow::startRouterScripts()
 {
     QString localIp = getLocalIpAddress();
+    
+    // Kill any detached background zombies from previous sessions or manual runs first
+    QProcess::execute("ssh", QStringList() << "root@192.168.8.1" << "killall send_traffic_events.sh device_watch.sh");
     
     if (m_console1) m_console1->clear();
     if (m_console2) m_console2->clear();
