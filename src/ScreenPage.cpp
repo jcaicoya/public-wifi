@@ -69,3 +69,10 @@ QPushButton* ScreenPage::addNavButton(const QString& text)
     m_navLayout->addWidget(button);
     return button;
 }
+
+void ScreenPage::setTitle(const QString& title)
+{
+    if (m_titleLabel) {
+        m_titleLabel->setText(title);
+    }
+}

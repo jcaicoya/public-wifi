@@ -212,6 +212,7 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     const QString device = obj.value("device").toString().trimmed();
     const QString action = obj.value("action").toString().trimmed();
     const QString ip = obj.value("ip").toString().trimmed();
+    const QString mac = obj.value("mac").toString().trimmed();
 
     if (!m_devicesListB || (device.isEmpty() && ip.isEmpty())) {
         return;
@@ -232,11 +233,19 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
             QString displayName = device.isEmpty() ? ip : device;
             auto* item = new QListWidgetItem(displayName);
             item->setToolTip(ip);
+            if (!mac.isEmpty()) {
+                item->setData(Qt::UserRole + 1, mac);
+            }
             m_devicesListB->addItem(item);
             foundItem = item;
             qDebug() << "Device added from device event (IP lookup):" << displayName << ip;
-        } else if (!device.isEmpty()) {
-            foundItem->setText(device); // Update name if it changed or was previously just an IP
+        } else {
+            if (!device.isEmpty()) {
+                foundItem->setText(device); // Update name if it changed or was previously just an IP
+            }
+            if (!mac.isEmpty()) {
+                foundItem->setData(Qt::UserRole + 1, mac);
+            }
         }
 
         if (foundItem) {
@@ -253,6 +262,11 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
             foundItem->setForeground(Qt::darkGray);
             foundItem->setBackground(Qt::lightGray);
         }
+    }
+    
+    // Update Navigation header if the currently selected device was updated
+    if (foundItem && m_devicesListB->currentItem() == foundItem) {
+        updateNavigationHeader();
     }
 }
 
@@ -424,7 +438,7 @@ void MainWindow::buildPageB()
 
 void MainWindow::buildPageC()
 {
-    m_pageC = new ScreenPage("", "Selected Device Detail", this);
+    m_pageC = new ScreenPage("", "No device selected", this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
 
@@ -695,6 +709,7 @@ void MainWindow::wireNavigation()
         if (m_filteredTrafficViewC) {
             m_filteredTrafficViewC->clear();
         }
+        updateNavigationHeader();
         updateStatsView();
     });
 
@@ -731,6 +746,31 @@ void MainWindow::wireNavigation()
             goTo(static_cast<PageId>(currentIndex + 1));
         }
     });
+}
+
+void MainWindow::updateNavigationHeader()
+{
+    if (!m_pageC) return;
+
+    QString selectedIp;
+    QString selectedName;
+    QString selectedMac;
+    
+    if (m_devicesListB && m_devicesListB->currentItem()) {
+        selectedIp = m_devicesListB->currentItem()->toolTip();
+        selectedName = m_devicesListB->currentItem()->text();
+        selectedMac = m_devicesListB->currentItem()->data(Qt::UserRole + 1).toString();
+    }
+
+    if (selectedIp.isEmpty()) {
+        m_pageC->setTitle("No device selected");
+    } else {
+        QString title = QString("TARGET: %1 (%2)").arg(selectedName, selectedIp);
+        if (!selectedMac.isEmpty()) {
+            title += QString(" - MAC: %1").arg(selectedMac);
+        }
+        m_pageC->setTitle(title);
+    }
 }
 
 void MainWindow::updateStatsView()

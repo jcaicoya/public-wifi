@@ -56,6 +56,7 @@ private:
     void processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj);
     void processDeviceEvent(const QJsonObject& obj);
     void updateStatsView();
+    void updateNavigationHeader();
 
 private slots:
     void startRouterScripts();

@@ -19,6 +19,7 @@ public:
     QVBoxLayout* contentLayout() const { return m_contentLayout; }
     QHBoxLayout* navLayout() const { return m_navLayout; }
     QPushButton* addNavButton(const QString& text);
+    void setTitle(const QString& title);
 
 private:
     QLabel* m_idLabel = nullptr;

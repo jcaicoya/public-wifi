@@ -137,3 +137,4 @@ Next milestones:
 3. **Improve Events Mapping:** Better mapping from raw domains to recognizable services.
 4. **Improve UI:** General aesthetic polish and readability.
 5. **Performance & Stability:** Robust reconnection handling for the TCP servers and optimization of `MapView` repaints.
+6. **Unify message model:** We should unify the message model to ensure consistency across different components and improve maintainability.

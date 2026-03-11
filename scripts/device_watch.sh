@@ -44,15 +44,17 @@ send_event() {
     ACTION="$1"
     NAME="$2"
     IP="$3"
+    MAC="$4"
 
     # Don't send completely empty events
-    if [ -z "$NAME" ] && [ -z "$IP" ]; then
+    if [ -z "$NAME" ] && [ -z "$IP" ] && [ -z "$MAC" ]; then
         return
     fi
 
     [ -z "$NAME" ] && NAME="$IP"
+    [ -z "$NAME" ] && NAME="$MAC"
 
-    JSON_MSG="{\"type\":\"device\",\"action\":\"$ACTION\",\"device\":\"$NAME\",\"ip\":\"$IP\"}"
+    JSON_MSG="{\"type\":\"device\",\"action\":\"$ACTION\",\"device\":\"$NAME\",\"ip\":\"$IP\",\"mac\":\"$MAC\"}"
 
     # Mirror to stderr so it shows up in Qt Node 01 Console
     echo "$JSON_MSG" >&2
@@ -75,7 +77,7 @@ for mac in $CURRENT_MACS; do
     if [ -n "$DEVICE" ]; then
         NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
         IP="$(echo "$DEVICE" | cut -d'|' -f2)"
-        send_event "connected" "$NAME" "$IP"
+        send_event "connected" "$NAME" "$IP" "$mac"
         # Only save to state file if we successfully sent the connected event
         echo "$mac" >> "$STATE_FILE"
     else
@@ -106,7 +108,7 @@ do
                 # DHCP is ready! Send event and add to state.
                 NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
                 IP="$(echo "$DEVICE" | cut -d'|' -f2)"
-                send_event "connected" "$NAME" "$IP"
+                send_event "connected" "$NAME" "$IP" "$mac"
                 echo "$mac" >> "$NEXT_STATE_FILE"
             else
                 # DHCP isn't ready. Don't add to state file so we check again next loop.
@@ -128,9 +130,9 @@ do
             if [ -n "$DEVICE" ]; then
                 NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
                 IP="$(echo "$DEVICE" | cut -d'|' -f2)"
-                send_event "disconnected" "$NAME" "$IP"
+                send_event "disconnected" "$NAME" "$IP" "$mac"
             else
-                send_event "disconnected" "$mac" "unknown"
+                send_event "disconnected" "$mac" "unknown" "$mac"
             fi
         fi
     done

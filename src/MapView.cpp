@@ -18,9 +18,11 @@ MapView::MapView(QWidget* parent)
     m_serviceToRegion["SEARCH"]    = "North America";
     m_serviceToRegion["APPLE"]     = "North America";
     m_serviceToRegion["MICROSOFT"] = "North America";
-    m_serviceToRegion["AMAZON"]    = "Europe";
-    m_serviceToRegion["WHATSAPP"]  = "North Europe"; // As requested
-    m_serviceToRegion["VIDEO"]     = "Asia";
+    m_serviceToRegion["AMAZON"]    = "Western Europe";
+    m_serviceToRegion["WHATSAPP"]  = "Northern Europe"; 
+    m_serviceToRegion["VIDEO"]     = "East Asia";
+    m_serviceToRegion["SOCIAL"]    = "North America";
+    m_serviceToRegion["CDN"]       = "Western Europe";
     
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, &MapView::updateAnimations);
@@ -30,47 +32,66 @@ MapView::MapView(QWidget* parent)
 void MapView::buildMapRegions()
 {
     // Minimalist / Cyber low-poly representations of regions
+    // Coordinate space: 1000x600
 
     // North America
     QPainterPath na;
-    na.moveTo(100, 50); na.lineTo(350, 50); na.lineTo(400, 150); 
-    na.lineTo(280, 280); na.lineTo(200, 250); na.lineTo(100, 150); na.closeSubpath();
+    na.moveTo(50, 100); na.lineTo(300, 80); na.lineTo(380, 180); 
+    na.lineTo(300, 280); na.lineTo(150, 280); na.lineTo(50, 200); na.closeSubpath();
     m_regions["North America"] = na;
 
     // South America
     QPainterPath sa;
-    sa.moveTo(270, 300); sa.lineTo(360, 300); sa.lineTo(400, 400);
-    sa.lineTo(300, 550); sa.lineTo(250, 450); sa.closeSubpath();
+    sa.moveTo(280, 320); sa.lineTo(380, 320); sa.lineTo(420, 420);
+    sa.lineTo(350, 580); sa.lineTo(280, 450); na.closeSubpath();
     m_regions["South America"] = sa;
 
-    // Europe
-    QPainterPath eu;
-    eu.moveTo(430, 80); eu.lineTo(580, 80); eu.lineTo(580, 180);
-    eu.lineTo(500, 220); eu.lineTo(430, 200); eu.closeSubpath();
-    m_regions["Europe"] = eu;
+    // Western Europe
+    QPainterPath weu;
+    weu.moveTo(420, 150); weu.lineTo(480, 150); weu.lineTo(480, 220);
+    weu.lineTo(420, 220); weu.closeSubpath();
+    m_regions["Western Europe"] = weu;
     
-    // North Europe (Specific region for WhatsApp demonstration)
+    // Northern Europe
     QPainterPath neu;
-    neu.moveTo(480, 40); neu.lineTo(560, 40); neu.lineTo(560, 75);
-    neu.lineTo(480, 75); neu.closeSubpath();
-    m_regions["North Europe"] = neu;
+    neu.moveTo(480, 50); neu.lineTo(580, 50); neu.lineTo(580, 140);
+    neu.lineTo(480, 140); neu.closeSubpath();
+    m_regions["Northern Europe"] = neu;
+
+    // Eastern Europe / Russia
+    QPainterPath rus;
+    rus.moveTo(580, 40); rus.lineTo(950, 40); rus.lineTo(950, 150);
+    rus.lineTo(580, 150); rus.closeSubpath();
+    m_regions["Russia / CIS"] = rus;
 
     // Africa
     QPainterPath af;
-    af.moveTo(430, 230); af.lineTo(560, 230); af.lineTo(600, 350);
-    af.lineTo(530, 480); af.lineTo(450, 400); af.lineTo(410, 300); af.closeSubpath();
+    af.moveTo(420, 240); af.lineTo(580, 240); af.lineTo(620, 380);
+    af.lineTo(550, 550); af.lineTo(450, 550); af.lineTo(400, 350); af.closeSubpath();
     m_regions["Africa"] = af;
 
-    // Asia
-    QPainterPath as;
-    as.moveTo(580, 50); as.lineTo(900, 50); as.lineTo(950, 250);
-    as.lineTo(800, 350); as.lineTo(650, 350); as.lineTo(580, 200); as.closeSubpath();
-    m_regions["Asia"] = as;
+    // Middle East
+    QPainterPath me;
+    me.moveTo(580, 200); me.lineTo(680, 200); me.lineTo(680, 280);
+    me.lineTo(580, 280); me.closeSubpath();
+    m_regions["Middle East"] = me;
+
+    // East Asia (China, Japan, etc.)
+    QPainterPath eas;
+    eas.moveTo(750, 160); eas.lineTo(980, 160); eas.lineTo(980, 350);
+    eas.lineTo(750, 350); eas.closeSubpath();
+    m_regions["East Asia"] = eas;
+
+    // South Asia (India, etc.)
+    QPainterPath sas;
+    sas.moveTo(680, 280); sas.lineTo(780, 280); sas.lineTo(780, 400);
+    sas.lineTo(680, 400); sas.closeSubpath();
+    m_regions["South Asia"] = sas;
 
     // Oceania
     QPainterPath oc;
-    oc.moveTo(800, 400); oc.lineTo(950, 400); oc.lineTo(950, 500);
-    oc.lineTo(850, 550); oc.lineTo(750, 480); oc.closeSubpath();
+    oc.moveTo(820, 420); oc.lineTo(980, 420); oc.lineTo(980, 580);
+    oc.lineTo(820, 580); oc.closeSubpath();
     m_regions["Oceania"] = oc;
 
     // Initialize highlight intensity for all regions to 0
@@ -176,11 +197,11 @@ void MapView::paintEvent(QPaintEvent* event)
 
         // Draw Region Label in the center of its polygon
         painter.setPen(QColor(100, 130, 170));
-        QFont font("Consolas", 12, QFont::Bold);
+        QFont font("Consolas", 10, QFont::Bold);
         painter.setFont(font);
         QPointF center = path.boundingRect().center();
         // Adjust text origin so it's roughly centered
-        painter.drawText(center + QPointF(-40, 5), regionName); 
+        painter.drawText(QRectF(center.x() - 60, center.y() - 10, 120, 20), Qt::AlignCenter, regionName); 
     }
 
     // Draw the animated data connections
