@@ -468,25 +468,72 @@ void MainWindow::buildPageE()
 {
     m_pageE = new ScreenPage("E", "Encrypted / Locked", this);
 
-    m_lockedPlaceholderE = new QLabel("WHATSAPP\nENCRYPTED\nLOCKED", m_pageE);
+    m_hackerTerminalE = new QTextEdit(m_pageE);
+    m_hackerTerminalE->setReadOnly(true);
+    m_hackerTerminalE->setStyleSheet("background: #090C10; color: #00FF44; font-family: Consolas, monospace; font-size: 14px; border: 1px solid #1E283C;");
+    m_hackerTerminalE->setPlainText("Waiting for target data stream...");
+    
+    m_lockedPlaceholderE = new QLabel("WHATSAPP\nEND-TO-END ENCRYPTION\n\nACCESS DENIED", m_pageE);
     m_lockedPlaceholderE->setAlignment(Qt::AlignCenter);
     QFont font = m_lockedPlaceholderE->font();
-    font.setPointSize(28);
+    font.setPointSize(36);
     font.setBold(true);
     m_lockedPlaceholderE->setFont(font);
-    m_lockedPlaceholderE->setFrameShape(QFrame::Box);
+    m_lockedPlaceholderE->setStyleSheet("color: #FF3333; background: #202020; border: 3px solid #FF3333; border-radius: 10px; padding: 20px;");
+    m_lockedPlaceholderE->hide(); // Hidden initially
 
-    m_pageE->contentLayout()->addStretch();
+    m_pageE->contentLayout()->addWidget(m_hackerTerminalE, 2);
+    m_pageE->contentLayout()->addSpacing(20);
     m_pageE->contentLayout()->addWidget(m_lockedPlaceholderE, 1);
-    m_pageE->contentLayout()->addStretch();
 
     auto* toA = m_pageE->addNavButton("A");
     auto* toB = m_pageE->addNavButton("B");
     auto* toC = m_pageE->addNavButton("C");
+    auto* startDemoBtn = m_pageE->addNavButton("Trigger Demo");
 
     connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
     connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
     connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+    connect(startDemoBtn, &QPushButton::clicked, this, &MainWindow::startEncryptionDemo);
+
+    m_encryptionTimer = new QTimer(this);
+    connect(m_encryptionTimer, &QTimer::timeout, this, [this]() {
+        if (!m_hackerTerminalE) return;
+
+        QStringList lines = {
+            "Intercepting packets on port 443...",
+            "Target identified: whatsapp.net",
+            "Establishing man-in-the-middle...",
+            "Extracting payload: [0x4A, 0x8F, 0xB2, 0x11, 0x90, 0xCC, 0xFF, 0x33]",
+            "Attempting to decode TLS stream...",
+            "Applying default key dictionary...",
+            "Key mismatch.",
+            "Brute forcing AES-256-GCM cipher...",
+            "Analyzing entropy: 0.9998 (HIGH)",
+            "ERROR: Key exchange used Ephemeral Diffie-Hellman.",
+            "Forward secrecy confirmed.",
+            "Content decryption FAILED."
+        };
+
+        if (m_encryptionStep < lines.size()) {
+            m_hackerTerminalE->append(QString("> %1").arg(lines[m_encryptionStep]));
+            m_encryptionStep++;
+            // Speed up the timer as we get closer to failure for dramatic effect
+            m_encryptionTimer->setInterval(std::max(100, 800 - (m_encryptionStep * 60)));
+        } else {
+            m_encryptionTimer->stop();
+            m_lockedPlaceholderE->show();
+        }
+    });
+}
+
+void MainWindow::startEncryptionDemo()
+{
+    m_lockedPlaceholderE->hide();
+    m_hackerTerminalE->clear();
+    m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION");
+    m_encryptionStep = 0;
+    m_encryptionTimer->start(800);
 }
 
 void MainWindow::wireNavigation()

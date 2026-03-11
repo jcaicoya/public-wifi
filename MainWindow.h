@@ -87,6 +87,11 @@ private:
 
     // E
     QLabel* m_lockedPlaceholderE = nullptr;
+    QTextEdit* m_hackerTerminalE = nullptr;
+    QTimer* m_encryptionTimer = nullptr;
+    int m_encryptionStep = 0;
+    
+    void startEncryptionDemo();
 
     // Optional next-step integration
     TcpJsonLineServer* m_trafficServer = nullptr;
