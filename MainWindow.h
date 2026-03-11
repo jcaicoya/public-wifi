@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include <QHash>
 #include <QJsonArray>
+#include <QDateTime>
 
 class QStackedWidget;
 class QListWidget;
@@ -36,6 +37,13 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 private:
+    struct DeviceStats {
+        int totalEvents = 0;
+        QHash<QString, int> serviceCounts;
+        QDateTime firstSeen;
+        QDateTime lastSeen;
+    };
+
     void buildUi();
     void buildPageA();
     void buildPageB();
@@ -49,6 +57,7 @@ private:
     QString getLocalIpAddress() const;
     void processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj);
     void processDeviceEvent(const QJsonObject& obj);
+    void updateStatsView();
 
 private slots:
     void startRouterScripts();
@@ -87,4 +96,7 @@ private:
     QTimer* m_demoTimer = nullptr;
     QJsonArray m_demoEvents;
     int m_demoIndex = 0;
+    
+    // Stats
+    QHash<QString, DeviceStats> m_deviceStats;
 };

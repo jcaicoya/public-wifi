@@ -171,6 +171,19 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
             }
         }
     }
+
+    if (!device.isEmpty()) {
+        auto& stats = m_deviceStats[device];
+        if (stats.totalEvents == 0) {
+            stats.firstSeen = QDateTime::currentDateTime();
+        }
+        stats.lastSeen = QDateTime::currentDateTime();
+        stats.totalEvents++;
+        if (!event.isEmpty()) {
+            stats.serviceCounts[event]++;
+        }
+        updateStatsView();
+    }
 }
 
 void MainWindow::processDeviceEvent(const QJsonObject& obj)
@@ -428,7 +441,7 @@ void MainWindow::buildPageD()
 {
     m_pageD = new ScreenPage("D", "Statistics / History", this);
 
-    auto* label = new QLabel("Statistics placeholder", m_pageD);
+    auto* label = new QLabel("Device Profile", m_pageD);
     QFont font = label->font();
     font.setPointSize(20);
     font.setBold(true);
@@ -436,12 +449,8 @@ void MainWindow::buildPageD()
 
     m_statsPlaceholderD = new QTextEdit(m_pageD);
     m_statsPlaceholderD->setReadOnly(true);
-    m_statsPlaceholderD->setPlainText(
-        "Here we will show:\n"
-        "- connection time\n"
-        "- visited services\n"
-        "- number of events\n"
-        "- maybe geographic counters\n");
+    m_statsPlaceholderD->setStyleSheet("background: #202020; color: #00FF44; font-family: Consolas, monospace; font-size: 16px;");
+    m_statsPlaceholderD->setPlainText("Awaiting data...");
 
     m_pageD->contentLayout()->addWidget(label);
     m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
@@ -486,11 +495,62 @@ void MainWindow::wireNavigation()
         if (m_filteredTrafficViewC) {
             m_filteredTrafficViewC->clear();
         }
+        updateStatsView();
     });
 
     connect(m_devicesListB, &QListWidget::itemClicked, this, [this]() {
         goTo(PageId::C);
     });
+}
+
+void MainWindow::updateStatsView()
+{
+    if (!m_statsPlaceholderD) return;
+
+    QString selectedDevice;
+    if (m_devicesListB && m_devicesListB->currentItem()) {
+        selectedDevice = m_devicesListB->currentItem()->text();
+    }
+
+    if (selectedDevice.isEmpty()) {
+        m_statsPlaceholderD->setPlainText("No device selected.\n\nSelect a device on Screen B to view its statistics.");
+        return;
+    }
+
+    if (!m_deviceStats.contains(selectedDevice)) {
+        m_statsPlaceholderD->setPlainText(QString("No statistics available yet for: %1").arg(selectedDevice));
+        return;
+    }
+
+    const auto& stats = m_deviceStats[selectedDevice];
+    
+    QString text = QString("=== TARGET PROFILE: %1 ===\n\n").arg(selectedDevice);
+    
+    qint64 durationSecs = stats.firstSeen.secsTo(stats.lastSeen);
+    if (durationSecs == 0) durationSecs = 1;
+
+    text += QString("First Seen : %1\n").arg(stats.firstSeen.toString("hh:mm:ss"));
+    text += QString("Last Seen  : %1\n").arg(stats.lastSeen.toString("hh:mm:ss"));
+    text += QString("Duration   : %1 seconds\n").arg(durationSecs);
+    text += QString("Total Pkts : %1\n\n").arg(stats.totalEvents);
+    
+    text += "--- IDENTIFIED SERVICES ---\n";
+    if (stats.serviceCounts.isEmpty()) {
+        text += "None detected yet.\n";
+    } else {
+        auto keys = stats.serviceCounts.keys();
+        std::sort(keys.begin(), keys.end(), [&stats](const QString& a, const QString& b) {
+            return stats.serviceCounts[a] > stats.serviceCounts[b];
+        });
+        
+        for (const QString& service : keys) {
+            text += QString("%1 : %2 requests\n")
+                        .arg(service, -12)
+                        .arg(stats.serviceCounts[service]);
+        }
+    }
+
+    m_statsPlaceholderD->setPlainText(text);
 }
 
 void MainWindow::goTo(PageId pageId)
