@@ -32,6 +32,8 @@
 #include <QWidget>
 #include <QDebug>
 
+#include <QRandomGenerator>
+
 namespace
 {
 QString pageName(MainWindow::PageId pageId)
@@ -506,20 +508,30 @@ void MainWindow::buildPageD()
 
 void MainWindow::buildPageE()
 {
-    m_pageE = new ScreenPage("", "Encrypted / Locked", this);
+    m_pageE = new ScreenPage("", "Encryption Analysis", this);
 
     m_hackerTerminalE = new QTextEdit(m_pageE);
     m_hackerTerminalE->setReadOnly(true);
     m_hackerTerminalE->setStyleSheet("background: #090C10; color: #00FF44; font-family: Consolas, monospace; font-size: 14px; border: 1px solid #1E283C;");
     m_hackerTerminalE->setPlainText("Waiting for target data stream...");
     
-    m_lockedPlaceholderE = new QLabel("WHATSAPP\nEND-TO-END ENCRYPTION\n\nACCESS DENIED", m_pageE);
+    m_lockedPlaceholderE = new QLabel(m_pageE);
     m_lockedPlaceholderE->setAlignment(Qt::AlignCenter);
+    
+    // Set the reassuring text and styling
+    m_lockedPlaceholderE->setText(
+        "CRITICAL ERROR: DECRYPTION FAILED\n\n"
+        "Estimated time to crack: 13.8 Billion Years\n"
+        "STATUS: END-TO-END ENCRYPTED. YOUR SECRETS ARE SAFE."
+    );
+    
     QFont font = m_lockedPlaceholderE->font();
-    font.setPointSize(36);
+    font.setPointSize(24);
     font.setBold(true);
     m_lockedPlaceholderE->setFont(font);
-    m_lockedPlaceholderE->setStyleSheet("color: #FF3333; background: #202020; border: 3px solid #FF3333; border-radius: 10px; padding: 20px;");
+    
+    // Use a reassuring cyan/blue border instead of angry red
+    m_lockedPlaceholderE->setStyleSheet("color: #00FFFF; background: #090C10; border: 3px solid #00FFFF; border-radius: 10px; padding: 30px;");
     m_lockedPlaceholderE->hide(); // Hidden initially
 
     m_pageE->contentLayout()->addWidget(m_hackerTerminalE, 2);
@@ -541,43 +553,93 @@ void MainWindow::buildPageE()
     connect(startDemoBtn, &QPushButton::clicked, this, &MainWindow::startEncryptionDemo);
 
     m_encryptionTimer = new QTimer(this);
-    connect(m_encryptionTimer, &QTimer::timeout, this, [this]() {
-        if (!m_hackerTerminalE) return;
+    connect(m_encryptionTimer, &QTimer::timeout, this, &MainWindow::updateEncryptionAnimation);
+}
 
-        QStringList lines = {
-            "Intercepting packets on port 443...",
-            "Target identified: whatsapp.net",
-            "Establishing man-in-the-middle...",
-            "Extracting payload: [0x4A, 0x8F, 0xB2, 0x11, 0x90, 0xCC, 0xFF, 0x33]",
-            "Attempting to decode TLS stream...",
-            "Applying default key dictionary...",
-            "Key mismatch.",
-            "Brute forcing AES-256-GCM cipher...",
-            "Analyzing entropy: 0.9998 (HIGH)",
-            "ERROR: Key exchange used Ephemeral Diffie-Hellman.",
-            "Forward secrecy confirmed.",
-            "Content decryption FAILED."
-        };
-
-        if (m_encryptionStep < lines.size()) {
-            m_hackerTerminalE->append(QString("> %1").arg(lines[m_encryptionStep]));
-            m_encryptionStep++;
-            // Speed up the timer as we get closer to failure for dramatic effect
-            m_encryptionTimer->setInterval(std::max(100, 800 - (m_encryptionStep * 60)));
-        } else {
-            m_encryptionTimer->stop();
-            m_lockedPlaceholderE->show();
+QString MainWindow::generateHexPayload(int lines)
+{
+    QString payload;
+    for (int i = 0; i < lines; ++i) {
+        QString line = "0x" + QString::number(QRandomGenerator::global()->generate() % 0xFFFF, 16).rightJustified(4, '0').toUpper();
+        for (int j = 0; j < 7; ++j) {
+            line += " 0x" + QString::number(QRandomGenerator::global()->generate() % 0xFFFF, 16).rightJustified(4, '0').toUpper();
         }
-    });
+        payload += line + "\n";
+    }
+    return payload;
 }
 
 void MainWindow::startEncryptionDemo()
 {
     m_lockedPlaceholderE->hide();
     m_hackerTerminalE->clear();
-    m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION");
+    m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION\n");
+    m_hackerTerminalE->append("> Intercepted packet from target device to whatsapp.net");
+    m_hackerTerminalE->append("> Extracting raw payload...\n");
+    
+    // Dump a wall of hex text immediately to prove we have the data
+    m_hackerTerminalE->append(generateHexPayload(15));
+    m_hackerTerminalE->append("\n> Payload captured. Content is unreadable (Encrypted).");
+    m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
+    
     m_encryptionStep = 0;
-    m_encryptionTimer->start(800);
+    m_bruteForceTick = 0;
+    m_encryptionTimer->start(50); // Very fast timer for the matrix/slot machine effect
+}
+
+void MainWindow::updateEncryptionAnimation()
+{
+    if (!m_hackerTerminalE) return;
+
+    if (m_encryptionStep == 0) {
+        // Phase 1: Rapid key injection simulation (lasts about 3 seconds)
+        if (m_bruteForceTick % 2 == 0) {
+            m_hackerTerminalE->append(QString("> Injecting key stream: [%1]").arg(generateHexPayload(1).trimmed()));
+        }
+        
+        m_bruteForceTick++;
+        if (m_bruteForceTick > 60) {
+            m_encryptionStep = 1;
+            m_bruteForceTick = 0;
+            m_hackerTerminalE->append("\n> Key dictionary exhausted.");
+            m_hackerTerminalE->append("> Switching to AES-256-GCM brute-force...");
+            m_encryptionTimer->setInterval(100); // Slow down slightly for the progress bar
+        }
+    } 
+    else if (m_encryptionStep == 1) {
+        // Phase 2: The tense progress bar (lasts about 6-7 seconds)
+        int progress = (m_bruteForceTick * 100) / 70; // 0 to 100% over 70 ticks
+        if (progress > 99) progress = 99; // Hang at 99% for maximum tension
+        
+        QString bar = "[";
+        for (int i = 0; i < 20; ++i) {
+            if (i < (progress / 5)) bar += "|";
+            else bar += " ";
+        }
+        bar += QString("] %1% - CPU LOAD: 100%").arg(progress);
+        
+        // Overwrite the last line by clearing and re-appending (simulates a carriage return)
+        QTextCursor cursor = m_hackerTerminalE->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        cursor.select(QTextCursor::LineUnderCursor);
+        cursor.removeSelectedText();
+        cursor.insertText(bar);
+        
+        m_bruteForceTick++;
+        if (m_bruteForceTick > 80) { // Keep them hanging at 99% for an extra second
+            m_encryptionStep = 2;
+        }
+    }
+    else if (m_encryptionStep == 2) {
+        // Phase 3: The crash and the reassurance
+        m_encryptionTimer->stop();
+        m_hackerTerminalE->append("\n> FATAL: Forward secrecy confirmed.");
+        m_hackerTerminalE->append("> Mathematical limits reached.");
+        m_hackerTerminalE->append("> Aborting operation.\n");
+        m_lockedPlaceholderE->show();
+    }
+    
+    m_hackerTerminalE->verticalScrollBar()->setValue(m_hackerTerminalE->verticalScrollBar()->maximum());
 }
 
 void MainWindow::wireNavigation()

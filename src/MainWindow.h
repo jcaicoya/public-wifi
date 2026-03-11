@@ -105,8 +105,11 @@ private:
     QTextEdit* m_hackerTerminalE = nullptr;
     QTimer* m_encryptionTimer = nullptr;
     int m_encryptionStep = 0;
+    int m_bruteForceTick = 0;
     
     void startEncryptionDemo();
+    void updateEncryptionAnimation();
+    QString generateHexPayload(int lines);
 
     // Optional next-step integration
     TcpJsonLineServer* m_trafficServer = nullptr;
