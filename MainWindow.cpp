@@ -6,6 +6,7 @@
 
 #include <QFile>
 #include <QFrame>
+#include <QGridLayout>
 #include <QHBoxLayout>
 #include <QHostAddress>
 #include <QJsonArray>
@@ -292,44 +293,97 @@ void MainWindow::buildUi()
 
 void MainWindow::buildPageA()
 {
-    m_pageA = new ScreenPage("A", "Intro / Start", this);
+    m_pageA = new ScreenPage("A", "Cybershow Command Center", this);
 
-    auto* introLabel = new QLabel("CYBERSHOW\nPublic Wi-Fi", m_pageA);
+    auto* mainSplitter = new QSplitter(Qt::Horizontal, m_pageA);
+
+    // Left side: 4 consoles in a grid
+    auto* consolesWidget = new QWidget(mainSplitter);
+    auto* gridLayout = new QGridLayout(consolesWidget);
+    gridLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto createConsole = [](const QString& title) {
+        auto* container = new QWidget();
+        auto* layout = new QVBoxLayout(container);
+        layout->setContentsMargins(0, 0, 0, 0);
+        
+        auto* label = new QLabel(title);
+        label->setStyleSheet("color: #00FFFF; font-weight: bold; font-family: Consolas;");
+        
+        auto* textEdit = new QTextEdit();
+        textEdit->setReadOnly(true);
+        textEdit->setStyleSheet("background: #090C10; color: #00FF44; font-family: Consolas, monospace; font-size: 12px; border: 1px solid #1E283C;");
+        textEdit->setPlainText("Waiting for connection...");
+        
+        layout->addWidget(label);
+        layout->addWidget(textEdit);
+        return std::make_pair(container, textEdit);
+    };
+
+    auto c1 = createConsole("NODE 01 // DEVICE WATCH");
+    auto c2 = createConsole("NODE 02 // TRAFFIC EVENTS");
+    auto c3 = createConsole("NODE 03 // SYSTEM LOGS");
+    auto c4 = createConsole("NODE 04 // ACTIVE CONNECTIONS");
+
+    m_console1 = c1.second;
+    m_console2 = c2.second;
+    m_console3 = c3.second;
+    m_console4 = c4.second;
+
+    gridLayout->addWidget(c1.first, 0, 0);
+    gridLayout->addWidget(c2.first, 0, 1);
+    gridLayout->addWidget(c3.first, 1, 0);
+    gridLayout->addWidget(c4.first, 1, 1);
+
+    // Right side: Controls
+    auto* controlsWidget = new QWidget(mainSplitter);
+    auto* controlsLayout = new QVBoxLayout(controlsWidget);
+
+    auto* introLabel = new QLabel("CYBERSHOW\nPublic Wi-Fi", controlsWidget);
     introLabel->setAlignment(Qt::AlignCenter);
     QFont font = introLabel->font();
     font.setPointSize(28);
     font.setBold(true);
     introLabel->setFont(font);
 
-    auto* subtitleLabel = new QLabel("Imagen / animación inicial", m_pageA);
-    subtitleLabel->setAlignment(Qt::AlignCenter);
+    auto* statusLabel = new QLabel("SYSTEM STANDBY", controlsWidget);
+    statusLabel->setAlignment(Qt::AlignCenter);
+    statusLabel->setStyleSheet("color: #FF3333; font-weight: bold; font-family: Consolas; font-size: 16px;");
 
-    auto* startRouterButton = new QPushButton("Start Router Scripts", m_pageA);
+    auto* startRouterButton = new QPushButton("Initialize Router [SSH]", controlsWidget);
     startRouterButton->setMinimumHeight(48);
 
-    auto* stopRouterButton = new QPushButton("Stop Router Scripts", m_pageA);
+    auto* stopRouterButton = new QPushButton("Terminate Connection", controlsWidget);
     stopRouterButton->setMinimumHeight(48);
 
-    auto* demoButton = new QPushButton("Demo Mode", m_pageA);
+    auto* demoButton = new QPushButton("Demo Mode", controlsWidget);
     demoButton->setMinimumHeight(48);
 
-    auto* startButton = new QPushButton("Start", m_pageA);
+    auto* startButton = new QPushButton("Start Dashboard", controlsWidget);
     startButton->setMinimumHeight(48);
+    startButton->setStyleSheet("background-color: #00FF44; color: #000000; font-weight: bold; border-radius: 4px;");
 
-    auto* exitButton = new QPushButton("Exit", m_pageA);
+    auto* exitButton = new QPushButton("Exit", controlsWidget);
     exitButton->setMinimumHeight(48);
 
-    m_pageA->contentLayout()->addStretch();
-    m_pageA->contentLayout()->addWidget(introLabel);
-    m_pageA->contentLayout()->addWidget(subtitleLabel);
-    m_pageA->contentLayout()->addSpacing(20);
-    m_pageA->contentLayout()->addWidget(startRouterButton, 0, Qt::AlignCenter);
-    m_pageA->contentLayout()->addWidget(stopRouterButton, 0, Qt::AlignCenter);
-    m_pageA->contentLayout()->addWidget(demoButton, 0, Qt::AlignCenter);
-    m_pageA->contentLayout()->addSpacing(20);
-    m_pageA->contentLayout()->addWidget(startButton, 0, Qt::AlignCenter);
-    m_pageA->contentLayout()->addWidget(exitButton, 0, Qt::AlignCenter);
-    m_pageA->contentLayout()->addStretch();
+    controlsLayout->addStretch();
+    controlsLayout->addWidget(introLabel);
+    controlsLayout->addWidget(statusLabel);
+    controlsLayout->addSpacing(40);
+    controlsLayout->addWidget(startRouterButton);
+    controlsLayout->addWidget(stopRouterButton);
+    controlsLayout->addWidget(demoButton);
+    controlsLayout->addSpacing(40);
+    controlsLayout->addWidget(startButton);
+    controlsLayout->addWidget(exitButton);
+    controlsLayout->addStretch();
+
+    mainSplitter->addWidget(consolesWidget);
+    mainSplitter->addWidget(controlsWidget);
+    mainSplitter->setStretchFactor(0, 3);
+    mainSplitter->setStretchFactor(1, 1);
+
+    m_pageA->contentLayout()->addWidget(mainSplitter);
 
     connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
     connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
@@ -630,21 +684,58 @@ QString MainWindow::getLocalIpAddress() const
     return "192.168.8.182"; // Hardcoded fallback
 }
 
+void MainWindow::startSshConsole(QProcess*& proc, QTextEdit* console, const QString& command)
+{
+    if (proc) {
+        proc->kill();
+        proc->waitForFinished();
+        proc->deleteLater();
+    }
+    
+    proc = new QProcess(this);
+    connect(proc, &QProcess::readyReadStandardOutput, this, [proc, console]() {
+        if (!console) return;
+        QString text = QString::fromUtf8(proc->readAllStandardOutput());
+        console->append(text.trimmed());
+        console->verticalScrollBar()->setValue(console->verticalScrollBar()->maximum());
+    });
+    connect(proc, &QProcess::readyReadStandardError, this, [proc, console]() {
+        if (!console) return;
+        QString text = QString::fromUtf8(proc->readAllStandardError());
+        console->append(text.trimmed());
+        console->verticalScrollBar()->setValue(console->verticalScrollBar()->maximum());
+    });
+    
+    QStringList args;
+    args << "root@192.168.8.1" << command;
+    proc->start("ssh", args);
+}
+
 void MainWindow::startRouterScripts()
 {
     QString localIp = getLocalIpAddress();
-    QString cmd = QString("nohup /root/send_traffic_events.sh %1 5555 >/dev/null 2>&1 & "
-                          "nohup /root/device_watch.sh %1 5556 >/dev/null 2>&1 &").arg(localIp);
     
-    QStringList args;
-    args << "root@192.168.8.1" << cmd;
+    if (m_console1) m_console1->clear();
+    if (m_console2) m_console2->clear();
+    if (m_console3) m_console3->clear();
+    if (m_console4) m_console4->clear();
+
+    // Start 4 live SSH monitoring streams
+    startSshConsole(m_sshProc1, m_console1, QString("/root/device_watch.sh %1 5556").arg(localIp));
+    startSshConsole(m_sshProc2, m_console2, QString("/root/send_traffic_events.sh %1 5555").arg(localIp));
+    startSshConsole(m_sshProc3, m_console3, "logread -f");
+    startSshConsole(m_sshProc4, m_console4, "top -d 2");
     
-    QProcess::startDetached("ssh", args);
     statusBar()->showMessage(QString("Sent start command to router scripts. (IP: %1)").arg(localIp), 3000);
 }
 
 void MainWindow::stopRouterScripts()
 {
+    if (m_sshProc1) m_sshProc1->kill();
+    if (m_sshProc2) m_sshProc2->kill();
+    if (m_sshProc3) m_sshProc3->kill();
+    if (m_sshProc4) m_sshProc4->kill();
+
     QString cmd = "killall send_traffic_events.sh device_watch.sh";
     QStringList args;
     args << "root@192.168.8.1" << cmd;
