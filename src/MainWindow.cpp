@@ -26,6 +26,7 @@
 #include <QShortcut>
 #include <QKeySequence>
 #include <QScrollBar>
+#include <QTcpSocket>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -46,8 +47,8 @@ QString pageName(MainWindow::PageId pageId)
 }
 }
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(bool demoMode, QWidget* parent)
+    : QMainWindow(parent), m_isDemoMode(demoMode)
 {
     buildUi();
     wireNavigation();
@@ -90,26 +91,6 @@ MainWindow::MainWindow(QWidget* parent)
         qWarning() << message;
     });
 
-    connect(m_trafficServer, &TcpJsonLineServer::clientConnected,
-            this, [this](const QString& peer) {
-        statusBar()->showMessage(QString("Traffic client connected: %1").arg(peer), 2000);
-    });
-
-    connect(m_deviceServer, &TcpJsonLineServer::clientConnected,
-            this, [this](const QString& peer) {
-        statusBar()->showMessage(QString("Device client connected: %1").arg(peer), 2000);
-    });
-
-    connect(m_trafficServer, &TcpJsonLineServer::clientDisconnected,
-            this, [this](const QString& peer) {
-        statusBar()->showMessage(QString("Traffic client disconnected: %1").arg(peer), 2000);
-    });
-
-    connect(m_deviceServer, &TcpJsonLineServer::clientDisconnected,
-            this, [this](const QString& peer) {
-        statusBar()->showMessage(QString("Device client disconnected: %1").arg(peer), 2000);
-    });
-
     if (!m_trafficServer->start()) {
         qWarning() << "Traffic server failed to start";
     }
@@ -117,11 +98,32 @@ MainWindow::MainWindow(QWidget* parent)
     if (!m_deviceServer->start()) {
         qWarning() << "Device server failed to start";
     }
+
+    if (m_isDemoMode) {
+        if (m_console1) m_console1->setPlainText("Running in DEMO MODE...\nNo router connection required.");
+        if (m_console2) m_console2->setPlainText("Running in DEMO MODE...\nWaiting for simulated events.");
+        if (m_console3) m_console3->setPlainText("Running in DEMO MODE...\nLogs disabled.");
+        if (m_console4) m_console4->setPlainText("Running in DEMO MODE...\nConnections hidden.");
+        startDemoMode();
+    } else {
+        m_routerRetryTimer = new QTimer(this);
+        connect(m_routerRetryTimer, &QTimer::timeout, this, &MainWindow::tryConnectRouter);
+        tryConnectRouter();
+    }
 }
 
 MainWindow::~MainWindow()
 {
+    if (m_routerRetryTimer) {
+        m_routerRetryTimer->stop();
+    }
     stopRouterScripts();
+    
+    // Make sure we forcefully kill the QProcesses so they don't linger
+    if (m_sshProc1) { m_sshProc1->kill(); m_sshProc1->waitForFinished(); }
+    if (m_sshProc2) { m_sshProc2->kill(); m_sshProc2->waitForFinished(); }
+    if (m_sshProc3) { m_sshProc3->kill(); m_sshProc3->waitForFinished(); }
+    if (m_sshProc4) { m_sshProc4->kill(); m_sshProc4->waitForFinished(); }
 }
 
 void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj)
@@ -328,31 +330,20 @@ void MainWindow::buildPageA()
     font.setBold(true);
     introLabel->setFont(font);
 
-    auto* statusLabel = new QLabel("SYSTEM STANDBY", controlsWidget);
+    auto* statusLabel = new QLabel("SYSTEM STATUS", controlsWidget);
     statusLabel->setAlignment(Qt::AlignCenter);
     statusLabel->setStyleSheet("color: #FF3333; font-weight: bold; font-family: Consolas; font-size: 16px;");
 
-    auto* startRouterButton = new QPushButton("Initialize Router [SSH]", controlsWidget);
-    startRouterButton->setMinimumHeight(48);
-
-    auto* stopRouterButton = new QPushButton("Terminate Connection", controlsWidget);
-    stopRouterButton->setMinimumHeight(48);
-
-    auto* demoButton = new QPushButton("Demo Mode", controlsWidget);
-    demoButton->setMinimumHeight(48);
-
-    auto* exitButton = new QPushButton("Exit", controlsWidget);
-    exitButton->setMinimumHeight(48);
+    auto* imageLabel = new QLabel(controlsWidget);
+    QPixmap cuarzito(":/flying-cuarzito.png");
+    imageLabel->setPixmap(cuarzito.scaled(400, 400, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    imageLabel->setAlignment(Qt::AlignCenter);
 
     controlsLayout->addStretch();
     controlsLayout->addWidget(introLabel);
     controlsLayout->addWidget(statusLabel);
     controlsLayout->addSpacing(40);
-    controlsLayout->addWidget(startRouterButton);
-    controlsLayout->addWidget(stopRouterButton);
-    controlsLayout->addWidget(demoButton);
-    controlsLayout->addSpacing(40);
-    controlsLayout->addWidget(exitButton);
+    controlsLayout->addWidget(imageLabel);
     controlsLayout->addStretch();
 
     mainSplitter->addWidget(consolesWidget);
@@ -367,11 +358,6 @@ void MainWindow::buildPageA()
     auto* toC = m_pageA->addNavButton("Navigation");
     auto* toD = m_pageA->addNavButton("Statistics");
     auto* toE = m_pageA->addNavButton("Encryption");
-
-    connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
-    connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
-    connect(demoButton, &QPushButton::clicked, this, &MainWindow::startDemoMode);
-    connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
 
     connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
     connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
@@ -829,5 +815,37 @@ void MainWindow::onDemoTimerTick()
     }
 
     m_demoIndex++;
+}
+
+void MainWindow::tryConnectRouter()
+{
+    if (m_console1) {
+        m_console1->append("Checking router connection at 192.168.8.1:22...");
+    }
+
+    QTcpSocket socket;
+    socket.connectToHost("192.168.8.1", 22);
+    
+    if (socket.waitForConnected(2000)) {
+        // We successfully connected to SSH port!
+        socket.disconnectFromHost();
+        
+        if (m_routerRetryTimer && m_routerRetryTimer->isActive()) {
+            m_routerRetryTimer->stop();
+        }
+        
+        if (m_console1) {
+            m_console1->append("Router reachable. Initializing SSH scripts...\n");
+        }
+        
+        startRouterScripts();
+    } else {
+        if (m_console1) {
+            m_console1->append("Router not reachable. Retrying in 5 seconds...\n");
+        }
+        if (m_routerRetryTimer && !m_routerRetryTimer->isActive()) {
+            m_routerRetryTimer->start(5000);
+        }
+    }
 }
 

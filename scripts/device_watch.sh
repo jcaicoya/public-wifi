@@ -64,6 +64,7 @@ send_event() {
 echo "Starting device watch to $HOST:$PORT..." >&2
 
 # --- NEW: Announce already connected devices on startup ---
+> "$STATE_FILE" # Ensure it starts empty
 CURRENT_MACS="$(get_connected_macs)"
 for mac in $CURRENT_MACS; do
     # Skip empty lines
@@ -74,10 +75,12 @@ for mac in $CURRENT_MACS; do
         NAME="$(echo "$DEVICE" | cut -d'|' -f1)"
         IP="$(echo "$DEVICE" | cut -d'|' -f2)"
         send_event "connected" "$NAME" "$IP"
+        # Only save to state file if we successfully sent the connected event
+        echo "$mac" >> "$STATE_FILE"
+    else
+        echo "Startup: Waiting for DHCP lease for $mac..." >&2
     fi
 done
-# Save the initial state, ensuring we only save non-empty lines
-echo "$CURRENT_MACS" | sed '/^$/d' > "$STATE_FILE"
 
 # --- Main Watch Loop ---
 while true

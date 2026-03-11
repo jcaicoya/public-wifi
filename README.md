@@ -116,19 +116,24 @@ Working features:
 
 - Qt application running
 - TCP servers and JSON parsing implemented
-- Router scripts producing events
+- Router scripts producing events (device connections and HTTP/DNS traffic)
 - Live traffic displayed in raw logs
 - Device connection detection and filtering implemented
-- Multi‑screen navigation operational
+- Multi‑screen navigation operational (via global keyboard shortcuts and buttons)
+- **Auto-connect on Startup & Background Management**
 - **Remote SSH control of router scripts**
 - **Dynamic low-poly map visualization with geographic regions**
 - **Animated data packet flows and region highlights (with particle trails)**
-- **Virtual Router (Demo Mode) for testing**
+- **Virtual Router (Demo Mode) for testing via `--demo` CLI argument**
 - **Statistics Dashboard (Screen D) aggregating data in real time**
 - **Encryption Demonstration sequence (Screen E) with terminal and locked screen**
 - **Global dark mode UI applied**
+- **Project codebase refactored (`src/` and `resources/` directories)**
 
 Next milestones:
 
-1. Improve router scripts (ensure persistent connection and reliability).
-2. (Optional) Integrate sound effects for device connections.
+1. **Focus on Encryption Screen:** Explore the limits of the OpenWrt router and its sniffing capabilities (e.g. capturing unencrypted HTTP).
+2. **Improve World Map:** Refine SVGs, add more geographic regions and active datacenter pulsing.
+3. **Improve Events Mapping:** Better mapping from raw domains to recognizable services.
+4. **Improve UI:** General aesthetic polish and readability.
+5. **Performance & Stability:** Robust reconnection handling for the TCP servers and optimization of `MapView` repaints.

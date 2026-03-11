@@ -22,7 +22,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget* parent = nullptr);
+    explicit MainWindow(bool demoMode = false, QWidget* parent = nullptr);
     ~MainWindow() override;
 
     enum class PageId
@@ -62,8 +62,12 @@ private slots:
     void stopRouterScripts();
     void startDemoMode();
     void onDemoTimerTick();
+    void tryConnectRouter();
 
 private:
+    bool m_isDemoMode = false;
+    QTimer* m_routerRetryTimer = nullptr;
+
     QStackedWidget* m_stack = nullptr;
 
     ScreenPage* m_pageA = nullptr;

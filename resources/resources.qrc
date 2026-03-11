@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>demo_events.json</file>
+    <file>flying-cuarzito.png</file>
 </qresource>
 </RCC>

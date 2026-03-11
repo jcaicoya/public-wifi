@@ -33,20 +33,20 @@ The application is designed to look like a high-tech, slightly intimidating "hac
 
 This outlines how the presenter interacts with the Qt Application during the stage demonstration.
 
-### Step 1: The Setup (Screen A)
+### Step 1: The Setup (Screen A - Main)
 *   **Action:** Presenter welcomes the audience and explains the premise (the danger of open Wi-Fi).
-*   **UI Interaction:** Presenter clicks **"Start Router Scripts"** (or "Demo Mode" if practicing).
-*   **Visual:** The audience sees the initial Cybershow title screen.
+*   **UI Interaction:** The application is launched (it auto-connects to the router in the background).
+*   **Visual:** The audience sees the initial Cybershow title screen featuring the "Cuarzito" mascot and 4 live hacker consoles monitoring the system.
 
 ### Step 2: The Trap (Screen B - Devices & Raw Logs)
 *   **Action:** Presenter asks a volunteer to connect their phone to the show's Wi-Fi network (or uses their own test phone).
-*   **UI Interaction:** Presenter presses `2` to navigate to **Screen B**.
+*   **UI Interaction:** Presenter presses `2` (or `D` / Right Arrow) to navigate to **Screen B**.
 *   **Visual:** The audience sees the raw, unreadable JSON data starting to scroll rapidly on the right. On the left, a new device (`iPhone`, `Android`, or `DemoPhone`) pops into the list highlighted in **Green**, revealing its internal IP address.
 *   **Narrative:** "You are connected. You think you are safe, but look at what the network sees."
 
-### Step 3: The Reveal (Screen C - The Map)
+### Step 3: The Reveal (Screen C - Navigation / Map)
 *   **Action:** The presenter wants to show exactly *what* the phone is doing.
-*   **UI Interaction:** Presenter clicks the target phone in the list on Screen B, instantly jumping to **Screen C**.
+*   **UI Interaction:** Presenter clicks the target phone in the list on Screen B, instantly jumping to **Screen C** (or presses `3` / `N`).
 *   **Visual:** The Map View. The audience sees the phone pulsating in Green in Asturias, Spain. As the user opens apps (WhatsApp, Amazon, Netflix), bright Cyan packets shoot across the map, illuminating entire continents (North Europe, America, Asia).
 *   **Narrative:** "Every time you open an app, you are broadcasting your destination to anyone listening. You just opened WhatsApp; the data is flying to North Europe."
 

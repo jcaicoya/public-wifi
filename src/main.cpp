@@ -1,9 +1,20 @@
 #include <QApplication>
+#include <QCommandLineParser>
 #include "MainWindow.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("Public Wi-Fi Cybershow");
+    parser.addHelpOption();
+    
+    QCommandLineOption demoOption(QStringList() << "d" << "demo", "Run in demo mode (no router needed).");
+    parser.addOption(demoOption);
+    
+    parser.process(app);
+    bool isDemoMode = parser.isSet(demoOption);
 
     app.setStyle("Fusion");
     app.setStyleSheet(
@@ -20,7 +31,7 @@ int main(int argc, char *argv[])
         "QLabel { color: #FFFFFF; }"
     );
 
-    MainWindow window;
+    MainWindow window(isDemoMode);
     window.showMaximized();
 
     return app.exec();
