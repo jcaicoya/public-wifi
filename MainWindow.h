@@ -27,11 +27,11 @@ public:
 
     enum class PageId
     {
-        A = 0,
-        B,
-        C,
-        D,
-        E
+        Main = 0,
+        Devices,
+        Navigation,
+        Statistics,
+        Encryption
     };
 
 protected:

@@ -34,11 +34,11 @@ namespace
 QString pageName(MainWindow::PageId pageId)
 {
     switch (pageId) {
-    case MainWindow::PageId::A: return "A";
-    case MainWindow::PageId::B: return "B";
-    case MainWindow::PageId::C: return "C";
-    case MainWindow::PageId::D: return "D";
-    case MainWindow::PageId::E: return "E";
+    case MainWindow::PageId::Main: return "Main";
+    case MainWindow::PageId::Devices: return "Devices";
+    case MainWindow::PageId::Navigation: return "Navigation";
+    case MainWindow::PageId::Statistics: return "Statistics";
+    case MainWindow::PageId::Encryption: return "Encryption";
     }
     return "?";
 }
@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget* parent)
 {
     buildUi();
     wireNavigation();
-    goTo(PageId::A);
+    goTo(PageId::Main);
 
     statusBar()->showMessage("Ready");
 
@@ -254,19 +254,24 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
 {
     switch (event->key()) {
     case Qt::Key_1:
-        goTo(PageId::A);
+    case Qt::Key_M:
+        goTo(PageId::Main);
         return;
     case Qt::Key_2:
-        goTo(PageId::B);
+    case Qt::Key_D:
+        goTo(PageId::Devices);
         return;
     case Qt::Key_3:
-        goTo(PageId::C);
+    case Qt::Key_N:
+        goTo(PageId::Navigation);
         return;
     case Qt::Key_4:
-        goTo(PageId::D);
+    case Qt::Key_S:
+        goTo(PageId::Statistics);
         return;
     case Qt::Key_5:
-        goTo(PageId::E);
+    case Qt::Key_E:
+        goTo(PageId::Encryption);
         return;
     default:
         break;
@@ -298,7 +303,7 @@ void MainWindow::buildUi()
 
 void MainWindow::buildPageA()
 {
-    m_pageA = new ScreenPage("A", "Cybershow Command Center", this);
+    m_pageA = new ScreenPage("", "Cybershow Command Center", this);
 
     auto* mainSplitter = new QSplitter(Qt::Horizontal, m_pageA);
 
@@ -393,13 +398,13 @@ void MainWindow::buildPageA()
     connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
     connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
     connect(demoButton, &QPushButton::clicked, this, &MainWindow::startDemoMode);
-    connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
+    connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
     connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
 }
 
 void MainWindow::buildPageB()
 {
-    m_pageB = new ScreenPage("B", "Devices + Raw Traffic", this);
+    m_pageB = new ScreenPage("", "Devices + Raw Traffic", this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
 
@@ -438,20 +443,22 @@ void MainWindow::buildPageB()
 
     m_pageB->contentLayout()->addWidget(splitter);
 
-    auto* toA = m_pageB->addNavButton("A");
-    auto* toC = m_pageB->addNavButton("C");
-    auto* toD = m_pageB->addNavButton("D");
-    auto* toE = m_pageB->addNavButton("E");
+    auto* toA = m_pageB->addNavButton("Main");
+    auto* toB = m_pageB->addNavButton("Devices");
+    auto* toC = m_pageB->addNavButton("Navigation");
+    auto* toD = m_pageB->addNavButton("Statistics");
+    auto* toE = m_pageB->addNavButton("Encryption");
 
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::D); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::E); });
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageC()
 {
-    m_pageC = new ScreenPage("C", "Selected Device Detail", this);
+    m_pageC = new ScreenPage("", "Selected Device Detail", this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
 
@@ -489,20 +496,22 @@ void MainWindow::buildPageC()
 
     m_pageC->contentLayout()->addWidget(splitter);
 
-    auto* toA = m_pageC->addNavButton("A");
-    auto* toB = m_pageC->addNavButton("B");
-    auto* toD = m_pageC->addNavButton("D");
-    auto* toE = m_pageC->addNavButton("E");
+    auto* toA = m_pageC->addNavButton("Main");
+    auto* toB = m_pageC->addNavButton("Devices");
+    auto* toC = m_pageC->addNavButton("Navigation");
+    auto* toD = m_pageC->addNavButton("Statistics");
+    auto* toE = m_pageC->addNavButton("Encryption");
 
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::D); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::E); });
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageD()
 {
-    m_pageD = new ScreenPage("D", "Statistics / History", this);
+    m_pageD = new ScreenPage("", "Statistics / History", this);
 
     auto* label = new QLabel("Device Profile", m_pageD);
     QFont font = label->font();
@@ -518,18 +527,22 @@ void MainWindow::buildPageD()
     m_pageD->contentLayout()->addWidget(label);
     m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
 
-    auto* toA = m_pageD->addNavButton("A");
-    auto* toB = m_pageD->addNavButton("B");
-    auto* toC = m_pageD->addNavButton("C");
+    auto* toA = m_pageD->addNavButton("Main");
+    auto* toB = m_pageD->addNavButton("Devices");
+    auto* toC = m_pageD->addNavButton("Navigation");
+    auto* toD = m_pageD->addNavButton("Statistics");
+    auto* toE = m_pageD->addNavButton("Encryption");
 
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageE()
 {
-    m_pageE = new ScreenPage("E", "Encrypted / Locked", this);
+    m_pageE = new ScreenPage("", "Encrypted / Locked", this);
 
     m_hackerTerminalE = new QTextEdit(m_pageE);
     m_hackerTerminalE->setReadOnly(true);
@@ -549,14 +562,18 @@ void MainWindow::buildPageE()
     m_pageE->contentLayout()->addSpacing(20);
     m_pageE->contentLayout()->addWidget(m_lockedPlaceholderE, 1);
 
-    auto* toA = m_pageE->addNavButton("A");
-    auto* toB = m_pageE->addNavButton("B");
-    auto* toC = m_pageE->addNavButton("C");
+    auto* toA = m_pageE->addNavButton("Main");
+    auto* toB = m_pageE->addNavButton("Devices");
+    auto* toC = m_pageE->addNavButton("Navigation");
+    auto* toD = m_pageE->addNavButton("Statistics");
+    auto* toE = m_pageE->addNavButton("Encryption");
     auto* startDemoBtn = m_pageE->addNavButton("Trigger Demo");
 
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::A); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::B); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::C); });
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
     connect(startDemoBtn, &QPushButton::clicked, this, &MainWindow::startEncryptionDemo);
 
     m_encryptionTimer = new QTimer(this);
@@ -609,7 +626,7 @@ void MainWindow::wireNavigation()
     });
 
     connect(m_devicesListB, &QListWidget::itemClicked, this, [this]() {
-        goTo(PageId::C);
+        goTo(PageId::Navigation);
     });
 }
 
