@@ -74,6 +74,23 @@ void TcpJsonLineServer::onSocketReadyRead(QTcpSocket* socket)
 
 void TcpJsonLineServer::onSocketDisconnected(QTcpSocket* socket)
 {
+    // Process any remaining data in the buffer before closing
+    if (m_buffers.contains(socket)) {
+        QByteArray& buffer = m_buffers[socket];
+        if (!buffer.isEmpty()) {
+            // If the buffer doesn't end with a newline, we might have a partial line.
+            // In our protocol, we'll try to process it as a final line if it's not empty.
+            if (buffer.indexOf('\n') < 0) {
+                if (!buffer.trimmed().isEmpty()) {
+                    emit lineReceived(buffer.trimmed());
+                }
+            } else {
+                // There are still newlines to process
+                onSocketReadyRead(socket);
+            }
+        }
+    }
+
     const QString peer =
         QString("%1:%2").arg(socket->peerAddress().toString()).arg(socket->peerPort());
 

@@ -57,10 +57,11 @@ send_event() {
     # Mirror to stderr so it shows up in Qt Node 01 Console
     echo "$JSON_MSG" >&2
 
-    # Send via TCP. Use timeout to prevent hanging.
-    echo "$JSON_MSG" | nc -w 1 "$HOST" "$PORT" >/dev/null 2>&1
+    # Send via TCP. We use a group { ... } to pipe multiple commands to nc.
+    # We add a trailing newline explicitly and a small sleep (0.2s).
+    # This keeps the TCP connection open long enough for the Qt event loop to read it.
+    { echo "$JSON_MSG"; sleep 0.2; } | nc "$HOST" "$PORT" >/dev/null 2>&1
 }
-
 echo "Starting device watch to $HOST:$PORT..." >&2
 
 # --- NEW: Announce already connected devices on startup ---

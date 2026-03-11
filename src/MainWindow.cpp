@@ -142,43 +142,45 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
     }
 
     // Poblar lista de devices también desde tráfico
-    if (m_devicesListB && !device.isEmpty()) {
-        bool alreadyPresent = false;
+    if (m_devicesListB && !ip.isEmpty()) {
+        QListWidgetItem* foundItem = nullptr;
 
         for (int i = 0; i < m_devicesListB->count(); ++i) {
             QListWidgetItem* item = m_devicesListB->item(i);
-            if (item && item->text() == device) {
-                alreadyPresent = true;
-                if (!ip.isEmpty()) {
-                    item->setToolTip(ip);
-                }
+            if (item && item->toolTip() == ip) {
+                foundItem = item;
                 break;
             }
         }
 
-        if (!alreadyPresent) {
-            auto* item = new QListWidgetItem(device);
+        if (!foundItem) {
+            // New IP discovered via traffic
+            QString displayName = device.isEmpty() ? ip : device;
+            auto* item = new QListWidgetItem(displayName);
             item->setToolTip(ip);
             m_devicesListB->addItem(item);
-            qDebug() << "Device added from traffic:" << device << ip
-                     << "count=" << m_devicesListB->count();
+            foundItem = item;
+            qDebug() << "Device discovered from traffic (IP lookup):" << displayName << ip;
 
             if (m_devicesListB->count() == 1) {
                 m_devicesListB->setCurrentItem(item);
             }
+        } else if (!device.isEmpty() && foundItem->text() == ip) {
+            // Update IP name if it was previously just an IP
+            foundItem->setText(device);
         }
     }
 
     // En C mostramos solo el tráfico del device seleccionado
     if (m_filteredTrafficViewC) {
-        QString selectedDevice;
+        QString selectedIp;
         if (m_devicesListB && m_devicesListB->currentItem()) {
-            selectedDevice = m_devicesListB->currentItem()->text();
+            selectedIp = m_devicesListB->currentItem()->toolTip();
         }
 
-        if (selectedDevice.isEmpty() || selectedDevice == device) {
+        if (selectedIp.isEmpty() || selectedIp == ip) {
             m_filteredTrafficViewC->append(
-                QString("%1  %2  %3").arg(device, event, domain));
+                QString("%1  %2  %3").arg(device.isEmpty() ? ip : device, event, domain));
             // Auto-scroll ticker to the bottom
             m_filteredTrafficViewC->verticalScrollBar()->setValue(m_filteredTrafficViewC->verticalScrollBar()->maximum());
             
@@ -188,8 +190,9 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
         }
     }
 
-    if (!device.isEmpty()) {
-        auto& stats = m_deviceStats[device];
+    if (!ip.isEmpty()) {
+        // Use IP as stable key for stats
+        auto& stats = m_deviceStats[ip];
         if (stats.totalEvents == 0) {
             stats.firstSeen = QDateTime::currentDateTime();
         }
@@ -210,14 +213,15 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     const QString action = obj.value("action").toString().trimmed();
     const QString ip = obj.value("ip").toString().trimmed();
 
-    if (!m_devicesListB || device.isEmpty()) {
+    if (!m_devicesListB || (device.isEmpty() && ip.isEmpty())) {
         return;
     }
 
     QListWidgetItem* foundItem = nullptr;
     for (int i = 0; i < m_devicesListB->count(); ++i) {
         QListWidgetItem* item = m_devicesListB->item(i);
-        if (item && item->text() == device) {
+        // Robust lookup by IP (stored in tooltip)
+        if (item && item->toolTip() == ip) {
             foundItem = item;
             break;
         }
@@ -225,20 +229,19 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
 
     if (action == "connected") {
         if (!foundItem) {
-            auto* item = new QListWidgetItem(device);
+            QString displayName = device.isEmpty() ? ip : device;
+            auto* item = new QListWidgetItem(displayName);
             item->setToolTip(ip);
             m_devicesListB->addItem(item);
             foundItem = item;
-            qDebug() << "Device added from device event:" << device << ip
-                     << "count=" << m_devicesListB->count();
+            qDebug() << "Device added from device event (IP lookup):" << displayName << ip;
+        } else if (!device.isEmpty()) {
+            foundItem->setText(device); // Update name if it changed or was previously just an IP
         }
 
         if (foundItem) {
             foundItem->setForeground(Qt::black);
             foundItem->setBackground(Qt::green);
-            if (!ip.isEmpty()) {
-                foundItem->setToolTip(ip);
-            }
         }
 
         if (m_devicesListB->count() == 1 && !m_devicesListB->currentItem()) {
@@ -249,9 +252,6 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
         if (foundItem) {
             foundItem->setForeground(Qt::darkGray);
             foundItem->setBackground(Qt::lightGray);
-            if (!ip.isEmpty()) {
-                foundItem->setToolTip(ip);
-            }
         }
     }
 }
@@ -574,17 +574,64 @@ void MainWindow::startEncryptionDemo()
     m_lockedPlaceholderE->hide();
     m_hackerTerminalE->clear();
     m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION\n");
-    m_hackerTerminalE->append("> Intercepted packet from target device to whatsapp.net");
-    m_hackerTerminalE->append("> Extracting raw payload...\n");
-    
-    // Dump a wall of hex text immediately to prove we have the data
-    m_hackerTerminalE->append(generateHexPayload(15));
-    m_hackerTerminalE->append("\n> Payload captured. Content is unreadable (Encrypted).");
-    m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
-    
-    m_encryptionStep = 0;
-    m_bruteForceTick = 0;
-    m_encryptionTimer->start(50); // Very fast timer for the matrix/slot machine effect
+
+    if (m_isDemoMode) {
+        m_hackerTerminalE->append("> Intercepted packet from target device to whatsapp.net");
+        m_hackerTerminalE->append("> Extracting raw payload...\n");
+        m_hackerTerminalE->append(generateHexPayload(15));
+        m_hackerTerminalE->append("\n> Payload captured. Content is unreadable (Encrypted).");
+        m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
+        
+        m_encryptionStep = 0;
+        m_bruteForceTick = 0;
+        m_encryptionTimer->start(50);
+    } else {
+        QString targetIp;
+        if (m_devicesListB && m_devicesListB->currentItem()) {
+            targetIp = m_devicesListB->currentItem()->toolTip();
+        }
+
+        if (targetIp.isEmpty()) {
+            m_hackerTerminalE->append("> ERROR: No target device selected.");
+            m_hackerTerminalE->append("> Please select a device on the Devices screen first.");
+            return;
+        }
+
+        m_hackerTerminalE->append(QString("> Sniffing real-time traffic for IP: %1").arg(targetIp));
+        m_hackerTerminalE->append("> Filter: Port 443 (HTTPS) / 5222 (WhatsApp)");
+        m_hackerTerminalE->append("> WAITING FOR TARGET TO SEND DATA...\n");
+
+        if (m_sniffProc) {
+            m_sniffProc->kill();
+            m_sniffProc->waitForFinished();
+            m_sniffProc->deleteLater();
+        }
+
+        m_sniffProc = new QProcess(this);
+        connect(m_sniffProc, &QProcess::readyReadStandardOutput, this, [this]() {
+            QString output = QString::fromUtf8(m_sniffProc->readAllStandardOutput());
+            m_hackerTerminalE->append(output);
+            m_hackerTerminalE->verticalScrollBar()->setValue(m_hackerTerminalE->verticalScrollBar()->maximum());
+        });
+
+        connect(m_sniffProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
+            if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+                m_hackerTerminalE->append("\n> Interception complete.");
+                m_hackerTerminalE->append("> Payload captured. Content is unreadable (Encrypted).");
+                m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
+                
+                m_encryptionStep = 0;
+                m_bruteForceTick = 0;
+                m_encryptionTimer->start(50);
+            } else {
+                m_hackerTerminalE->append("\n> Interception aborted or timed out.");
+            }
+        });
+
+        QStringList args;
+        args << "root@192.168.8.1" << QString("/root/sniff_payload.sh %1").arg(targetIp);
+        m_sniffProc->start("ssh", args);
+    }
 }
 
 void MainWindow::updateEncryptionAnimation()
@@ -690,24 +737,27 @@ void MainWindow::updateStatsView()
 {
     if (!m_statsPlaceholderD) return;
 
-    QString selectedDevice;
+    QString selectedIp;
+    QString selectedName;
     if (m_devicesListB && m_devicesListB->currentItem()) {
-        selectedDevice = m_devicesListB->currentItem()->text();
+        selectedIp = m_devicesListB->currentItem()->toolTip();
+        selectedName = m_devicesListB->currentItem()->text();
     }
 
-    if (selectedDevice.isEmpty()) {
+    if (selectedIp.isEmpty()) {
         m_statsPlaceholderD->setPlainText("No device selected.\n\nSelect a device on Screen B to view its statistics.");
         return;
     }
 
-    if (!m_deviceStats.contains(selectedDevice)) {
-        m_statsPlaceholderD->setPlainText(QString("No statistics available yet for: %1").arg(selectedDevice));
+    if (!m_deviceStats.contains(selectedIp)) {
+        m_statsPlaceholderD->setPlainText(QString("No statistics available yet for: %1").arg(selectedName));
         return;
     }
 
-    const auto& stats = m_deviceStats[selectedDevice];
+    const auto& stats = m_deviceStats[selectedIp];
     
-    QString text = QString("=== TARGET PROFILE: %1 ===\n\n").arg(selectedDevice);
+    QString text = QString("=== TARGET PROFILE: %1 ===\n").arg(selectedName);
+    text += QString("Target IP: %1\n\n").arg(selectedIp);
     
     qint64 durationSecs = stats.firstSeen.secsTo(stats.lastSeen);
     if (durationSecs == 0) durationSecs = 1;
@@ -910,4 +960,3 @@ void MainWindow::tryConnectRouter()
         }
     }
 }
-
