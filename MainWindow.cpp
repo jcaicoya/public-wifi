@@ -23,6 +23,8 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTextEdit>
+#include <QShortcut>
+#include <QKeySequence>
 #include <QScrollBar>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -250,36 +252,6 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     }
 }
 
-void MainWindow::keyPressEvent(QKeyEvent* event)
-{
-    switch (event->key()) {
-    case Qt::Key_1:
-    case Qt::Key_M:
-        goTo(PageId::Main);
-        return;
-    case Qt::Key_2:
-    case Qt::Key_D:
-        goTo(PageId::Devices);
-        return;
-    case Qt::Key_3:
-    case Qt::Key_N:
-        goTo(PageId::Navigation);
-        return;
-    case Qt::Key_4:
-    case Qt::Key_S:
-        goTo(PageId::Statistics);
-        return;
-    case Qt::Key_5:
-    case Qt::Key_E:
-        goTo(PageId::Encryption);
-        return;
-    default:
-        break;
-    }
-
-    QMainWindow::keyPressEvent(event);
-}
-
 void MainWindow::buildUi()
 {
     setWindowTitle("Public Wi-Fi - Cybershow");
@@ -369,10 +341,6 @@ void MainWindow::buildPageA()
     auto* demoButton = new QPushButton("Demo Mode", controlsWidget);
     demoButton->setMinimumHeight(48);
 
-    auto* startButton = new QPushButton("Start Dashboard", controlsWidget);
-    startButton->setMinimumHeight(48);
-    startButton->setStyleSheet("background-color: #00FF44; color: #000000; font-weight: bold; border-radius: 4px;");
-
     auto* exitButton = new QPushButton("Exit", controlsWidget);
     exitButton->setMinimumHeight(48);
 
@@ -384,7 +352,6 @@ void MainWindow::buildPageA()
     controlsLayout->addWidget(stopRouterButton);
     controlsLayout->addWidget(demoButton);
     controlsLayout->addSpacing(40);
-    controlsLayout->addWidget(startButton);
     controlsLayout->addWidget(exitButton);
     controlsLayout->addStretch();
 
@@ -395,11 +362,22 @@ void MainWindow::buildPageA()
 
     m_pageA->contentLayout()->addWidget(mainSplitter);
 
+    auto* toA = m_pageA->addNavButton("Main");
+    auto* toB = m_pageA->addNavButton("Devices");
+    auto* toC = m_pageA->addNavButton("Navigation");
+    auto* toD = m_pageA->addNavButton("Statistics");
+    auto* toE = m_pageA->addNavButton("Encryption");
+
     connect(startRouterButton, &QPushButton::clicked, this, &MainWindow::startRouterScripts);
     connect(stopRouterButton, &QPushButton::clicked, this, &MainWindow::stopRouterScripts);
     connect(demoButton, &QPushButton::clicked, this, &MainWindow::startDemoMode);
-    connect(startButton, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
     connect(exitButton, &QPushButton::clicked, this, &QWidget::close);
+
+    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
+    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
+    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
+    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
+    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageB()
@@ -627,6 +605,36 @@ void MainWindow::wireNavigation()
 
     connect(m_devicesListB, &QListWidget::itemClicked, this, [this]() {
         goTo(PageId::Navigation);
+    });
+
+    // Global keyboard shortcuts that cannot be intercepted by child widgets
+    new QShortcut(QKeySequence(Qt::Key_1), this, [this]() { goTo(PageId::Main); });
+    new QShortcut(QKeySequence(Qt::Key_M), this, [this]() { goTo(PageId::Main); });
+
+    new QShortcut(QKeySequence(Qt::Key_2), this, [this]() { goTo(PageId::Devices); });
+    new QShortcut(QKeySequence(Qt::Key_D), this, [this]() { goTo(PageId::Devices); });
+
+    new QShortcut(QKeySequence(Qt::Key_3), this, [this]() { goTo(PageId::Navigation); });
+    new QShortcut(QKeySequence(Qt::Key_N), this, [this]() { goTo(PageId::Navigation); });
+
+    new QShortcut(QKeySequence(Qt::Key_4), this, [this]() { goTo(PageId::Statistics); });
+    new QShortcut(QKeySequence(Qt::Key_S), this, [this]() { goTo(PageId::Statistics); });
+
+    new QShortcut(QKeySequence(Qt::Key_5), this, [this]() { goTo(PageId::Encryption); });
+    new QShortcut(QKeySequence(Qt::Key_E), this, [this]() { goTo(PageId::Encryption); });
+
+    new QShortcut(QKeySequence(Qt::Key_Left), this, [this]() {
+        int currentIndex = m_stack->currentIndex();
+        if (currentIndex > 0) {
+            goTo(static_cast<PageId>(currentIndex - 1));
+        }
+    });
+
+    new QShortcut(QKeySequence(Qt::Key_Right), this, [this]() {
+        int currentIndex = m_stack->currentIndex();
+        if (currentIndex < m_stack->count() - 1) {
+            goTo(static_cast<PageId>(currentIndex + 1));
+        }
     });
 }
 

@@ -65,6 +65,7 @@ QPushButton* ScreenPage::addNavButton(const QString& text)
 {
     auto* button = new QPushButton(text, this);
     button->setMinimumHeight(36);
+    button->setFocusPolicy(Qt::NoFocus);
     m_navLayout->addWidget(button);
     return button;
 }

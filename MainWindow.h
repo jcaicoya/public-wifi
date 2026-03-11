@@ -34,9 +34,6 @@ public:
         Encryption
     };
 
-protected:
-    void keyPressEvent(QKeyEvent* event) override;
-
 private:
     struct DeviceStats {
         int totalEvents = 0;
