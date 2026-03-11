@@ -102,11 +102,13 @@ Working
 - Custom `MapView` widget drawing a low-poly geometric world map using `QPainterPath`
 - Animated traffic connections from fixed origin (Asturias, Spain) to remote geographic regions (North America, Europe, Asia, etc.)
 - Visual region highlighting on packet arrival
+- Map packet particle trails, auto-scrolling log, and global dark mode
+- Statistics dashboard logic and data aggregation (Screen D)
+- Encryption demonstration logic simulating the attempt and fail (Screen E)
 
 Not implemented yet
 
-- statistics dashboard logic (data aggregation)
-- encryption demonstration logic (simulating the attempt and fail)
+- (All planned UI features are implemented)
 
 ---
 
@@ -150,6 +152,5 @@ without performing any real intrusion.
 
 # Recommended Next Development Steps
 
-1. Aggregate traffic events to build the visual Statistics Dashboard (Screen D)
-2. Implement the Encryption Demo logic to show "locked" traffic (Screen E)
-3. Improve router scripts (ensure persistent connection and reliability)
+1. Improve router scripts (ensure persistent connection and reliability)
+2. (Optional) Integrate sound effects for device connections

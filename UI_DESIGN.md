@@ -50,13 +50,13 @@ This outlines how the presenter interacts with the Qt Application during the sta
 *   **Visual:** The Map View. The audience sees the phone pulsating in Green in Asturias, Spain. As the user opens apps (WhatsApp, Amazon, Netflix), bright Cyan packets shoot across the map, illuminating entire continents (North Europe, America, Asia).
 *   **Narrative:** "Every time you open an app, you are broadcasting your destination to anyone listening. You just opened WhatsApp; the data is flying to North Europe."
 
-### Step 4: The Profile (Screen D - Statistics) *(Pending Implementation)*
+### Step 4: The Profile (Screen D - Statistics)
 *   **Action:** The presenter summarizes the user's behavior.
 *   **UI Interaction:** Presenter presses `4` to navigate to **Screen D**.
 *   **Visual:** Aggregated stats. "You spent 45 seconds on Amazon and made 12 requests to Facebook."
 *   **Narrative:** "We don't just see individual packets; we can build a profile of your habits."
 
-### Step 5: The Defense (Screen E - Encryption) *(Pending Implementation)*
+### Step 5: The Defense (Screen E - Encryption)
 *   **Action:** The presenter explains how we protect ourselves. They attempt to "read" the WhatsApp messages.
 *   **UI Interaction:** Presenter presses `5` to navigate to **Screen E**.
 *   **Visual:** A simulated hacking attempt that results in a giant, secure "ENCRYPTED / LOCKED" padlock screen.
@@ -64,9 +64,12 @@ This outlines how the presenter interacts with the Qt Application during the sta
 
 ---
 
-## 3. Future UI/UX Enhancements
+## 3. UI/UX Enhancements
 
-*   **Particle Trails:** Add fading tails to the moving packets on the map.
-*   **Dark Mode Override:** Ensure the entire Qt application window frame respects the dark theme (custom styling for `QStackedWidget` panes).
-*   **Live Event Ticker:** On the Map screen, have the text log of events auto-scroll to the bottom as new packets fly across the map.
+**Completed Enhancements:**
+*   **Particle Trails:** Added fading tails to the moving packets on the map.
+*   **Dark Mode Override:** Ensured the entire Qt application window frame respects the dark theme (custom styling for `QStackedWidget` panes).
+*   **Live Event Ticker:** On the Map screen, the text log of events auto-scrolls to the bottom as new packets fly across the map.
+
+**Future Enhancements:**
 *   **Sound Effects:** Consider adding subtle "blip" or "typing" sound effects using `QSoundEffect` when new devices connect.

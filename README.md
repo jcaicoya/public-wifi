@@ -122,10 +122,13 @@ Working features:
 - Multi‑screen navigation operational
 - **Remote SSH control of router scripts**
 - **Dynamic low-poly map visualization with geographic regions**
-- **Animated data packet flows and region highlights**
+- **Animated data packet flows and region highlights (with particle trails)**
 - **Virtual Router (Demo Mode) for testing**
+- **Statistics Dashboard (Screen D) aggregating data in real time**
+- **Encryption Demonstration sequence (Screen E) with terminal and locked screen**
+- **Global dark mode UI applied**
 
 Next milestones:
 
-1. Aggregate traffic events for the statistics screen (Screen D).
-2. Implement the Encryption Demo locked screen logic (Screen E).
+1. Improve router scripts (ensure persistent connection and reliability).
+2. (Optional) Integrate sound effects for device connections.
