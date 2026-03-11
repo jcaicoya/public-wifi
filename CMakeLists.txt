@@ -15,16 +15,16 @@ find_package(Qt6 COMPONENTS
         Widgets
         REQUIRED)
 
-add_executable(public_wifi main.cpp
-        TcpJsonLineServer.cpp
-        TcpJsonLineServer.h
-        MainWindow.cpp
-        MainWindow.h
-        ScreenPage.cpp
-        ScreenPage.h
-        MapView.cpp
-        MapView.h
-        resources.qrc)
+add_executable(public_wifi src/main.cpp
+        src/TcpJsonLineServer.cpp
+        src/TcpJsonLineServer.h
+        src/MainWindow.cpp
+        src/MainWindow.h
+        src/ScreenPage.cpp
+        src/ScreenPage.h
+        src/MapView.cpp
+        src/MapView.h
+        resources/resources.qrc)
 
 target_link_libraries(public_wifi
         Qt::Core
