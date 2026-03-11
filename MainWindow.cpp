@@ -22,6 +22,7 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTextEdit>
+#include <QScrollBar>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -166,6 +167,9 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
         if (selectedDevice.isEmpty() || selectedDevice == device) {
             m_filteredTrafficViewC->append(
                 QString("%1  %2  %3").arg(device, event, domain));
+            // Auto-scroll ticker to the bottom
+            m_filteredTrafficViewC->verticalScrollBar()->setValue(m_filteredTrafficViewC->verticalScrollBar()->maximum());
+            
             if (m_mapViewC) {
                 m_mapViewC->addConnection(event);
             }

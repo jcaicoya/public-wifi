@@ -191,6 +191,21 @@ void MapView::paintEvent(QPaintEvent* event)
         painter.setPen(linePen);
         painter.drawLine(conn.start, conn.end);
 
+        // Particle trail (Fading tails)
+        for (int j = 1; j <= 8; ++j) {
+            qreal tailProgress = conn.progress - (j * 0.02);
+            if (tailProgress > 0) {
+                QPointF tailPos = conn.start + (conn.end - conn.start) * tailProgress;
+                int alpha = 100 - (j * 12);
+                if (alpha < 0) alpha = 0;
+                painter.setBrush(QColor(0, 255, 255, alpha));
+                painter.setPen(Qt::NoPen);
+                qreal radius = 4.0 - (j * 0.4);
+                if (radius < 1.0) radius = 1.0;
+                painter.drawEllipse(tailPos, radius, radius);
+            }
+        }
+
         // Moving packet
         QPointF currentPos = conn.start + (conn.end - conn.start) * conn.progress;
         
