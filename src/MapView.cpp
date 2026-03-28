@@ -13,9 +13,9 @@ MapView::MapView(QWidget* parent)
 {
     buildMapRegions();
 
-    // Phone location: Asturias, Spain — exact geographic coordinates (lon=-5.8, lat=43.4)
-    // x = (lon + 180) / 360 * 1000,  y = (90 - lat) / 180 * 600
-    m_phonePos = QPointF(484, 155);
+    // Phone location: Oviedo, Asturias, Spain (lon=-5.845°, lat=43.361°).
+    // Uses the same SVG-aligned projection as buildMapRegions().
+    m_phonePos = svgCoord(-5.845, 43.361);
 
     // Dictionary mapping Services to Geographic Regions
     m_serviceToRegion["SEARCH"]    = "North America";
@@ -31,15 +31,25 @@ MapView::MapView(QWidget* parent)
     connect(m_animationTimer, &QTimer::timeout, this, &MapView::updateAnimations);
     m_animationTimer->start(30); // ~33 FPS
 
-    // Load the SVG world map, recolor it for the dark cyber theme, and pre-render
-    // it once into a QPixmap so paintEvent never pays the SVG parsing cost per frame.
+    // Load the SVG world map, restyle it for the cyber theme, and pre-render once.
+    // Borders-only look: land fill removed, borders drawn in dim cyan-blue.
+    // Stroke widths boosted so they are visible at 1000×600 virtual resolution.
     QFile svgFile(QStringLiteral(":/world_map.svg"));
     if (svgFile.open(QIODevice::ReadOnly)) {
         QByteArray svgData = svgFile.readAll();
-        // Land fill: light gray → dark navy blue
-        svgData.replace("fill:#e0e0e0", "fill:#14203a");
-        // Country borders: black → dim slate blue
-        svgData.replace("stroke:#000000", "stroke:#253a5e");
+
+        // Remove land fill (both "fill:#e0e0e0" and "fill: #e0e0e0" variants in the SVG CSS)
+        svgData.replace("fill:#e0e0e0", "fill:none");
+        svgData.replace("fill: #e0e0e0", "fill:none");
+
+        // Borders: white country borders → dim cyber blue; black circles → same
+        svgData.replace("stroke:#ffffff", "stroke:#1a8cbf");
+        svgData.replace("stroke:#000000", "stroke:#1a8cbf");
+
+        // Make strokes thick enough to be visible at our render resolution
+        svgData.replace("stroke-width:0.5", "stroke-width:3.0");
+        svgData.replace("stroke-width:0.3", "stroke-width:2.0");
+
         m_svgRenderer = new QSvgRenderer(svgData, this);
 
         // Render once at virtual 1000×600 resolution
@@ -51,14 +61,33 @@ MapView::MapView(QWidget* parent)
     }
 }
 
+QPointF MapView::svgCoord(qreal lon, qreal lat)
+{
+    // Converts geographic (lon, lat) to our 1000×600 virtual coordinate space,
+    // aligned with how the SVG world map renders.
+    //
+    // The SVG (BlankMap-World-Compact) uses a pseudo-equirectangular projection
+    // with different x/y scales, empirically calibrated from Spain's path data:
+    //   x_svg = (lon + 180) × 7.024     [scale = viewBox_w / 360° = 2528.57/360]
+    //   y_svg = (90 − lat)  × 8.35      [calibrated: Spain NW coast path at SVG y=389
+    //                                     corresponds to ~43.6°N → 46.4° from pole
+    //                                     → 389/46.4 ≈ 8.38; map spans ~84°N to ~65°S]
+    //
+    // SVG viewBox: origin (82.992, 45.607), size 2528.57 × 1238.92
+    // Maps to our virtual space: (0,0)–(1000,600)
+    const qreal xs = (lon + 180.0) * 7.024;
+    const qreal ys = (90.0 - lat)  * 8.35;
+    return {
+        (xs - 82.992)  / 2528.57 * 1000.0,
+        (ys - 45.607)  / 1238.92 * 600.0
+    };
+}
+
 void MapView::buildMapRegions()
 {
-    // Equirectangular projection: 1000 x 600 coordinate space.
-    //   x = (lon + 180) / 360 * 1000
-    //   y = (90  - lat) / 180 * 600
-    auto gp = [](qreal lon, qreal lat) -> QPointF {
-        return { (lon + 180.0) / 360.0 * 1000.0,
-                 (90.0 - lat)  / 180.0 * 600.0 };
+    // All region vertices use svgCoord(lon, lat) so highlights align with the SVG map.
+    auto gp = [this](qreal lon, qreal lat) -> QPointF {
+        return svgCoord(lon, lat);
     };
 
     auto makePath = [](const QVector<QPointF>& pts) -> QPainterPath {

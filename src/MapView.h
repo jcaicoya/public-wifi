@@ -38,6 +38,7 @@ private slots:
 
 private:
     void buildMapRegions();
+    static QPointF svgCoord(qreal lon, qreal lat);
 
     QHash<QString, QPainterPath> m_regions;
     QHash<QString, qreal> m_regionHighlights;
