@@ -3,11 +3,13 @@
 #include <QWidget>
 #include <QHash>
 #include <QList>
+#include <QPixmap>
 #include <QPointF>
 #include <QString>
 #include <QPainterPath>
 
 class QTimer;
+class QSvgRenderer;
 
 struct MapConnection {
     QString service;
@@ -45,4 +47,7 @@ private:
     QTimer* m_animationTimer;
     int m_pulsePhase = 0;
     QPointF m_phonePos;
+
+    QSvgRenderer* m_svgRenderer = nullptr;
+    QPixmap m_mapPixmap;
 };

@@ -13,6 +13,7 @@ find_package(Qt6 COMPONENTS
         Gui
         Network
         Widgets
+        Svg
         REQUIRED)
 
 add_executable(public_wifi src/main.cpp
@@ -31,6 +32,7 @@ target_link_libraries(public_wifi
         Qt::Gui
         Qt::Network
         Qt::Widgets
+        Qt::Svg
 )
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
@@ -54,7 +56,7 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
     endif ()
-    foreach (QT_LIB Core Gui Network Widgets)
+    foreach (QT_LIB Core Gui Network Widgets Svg)
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"

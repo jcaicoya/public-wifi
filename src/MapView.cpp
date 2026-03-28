@@ -5,14 +5,17 @@
 #include <QColor>
 #include <QTimer>
 #include <QFont>
+#include <QFile>
+#include <QSvgRenderer>
 
 MapView::MapView(QWidget* parent)
     : QWidget(parent)
 {
     buildMapRegions();
 
-    // Phone location: Asturias, Spain (Approx SW Europe on our local map coordinate system)
-    m_phonePos = QPointF(440, 190);
+    // Phone location: Asturias, Spain — exact geographic coordinates (lon=-5.8, lat=43.4)
+    // x = (lon + 180) / 360 * 1000,  y = (90 - lat) / 180 * 600
+    m_phonePos = QPointF(484, 155);
 
     // Dictionary mapping Services to Geographic Regions
     m_serviceToRegion["SEARCH"]    = "North America";
@@ -27,77 +30,205 @@ MapView::MapView(QWidget* parent)
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, &MapView::updateAnimations);
     m_animationTimer->start(30); // ~33 FPS
+
+    // Load the SVG world map, recolor it for the dark cyber theme, and pre-render
+    // it once into a QPixmap so paintEvent never pays the SVG parsing cost per frame.
+    QFile svgFile(QStringLiteral(":/world_map.svg"));
+    if (svgFile.open(QIODevice::ReadOnly)) {
+        QByteArray svgData = svgFile.readAll();
+        // Land fill: light gray → dark navy blue
+        svgData.replace("fill:#e0e0e0", "fill:#14203a");
+        // Country borders: black → dim slate blue
+        svgData.replace("stroke:#000000", "stroke:#253a5e");
+        m_svgRenderer = new QSvgRenderer(svgData, this);
+
+        // Render once at virtual 1000×600 resolution
+        m_mapPixmap = QPixmap(1000, 600);
+        m_mapPixmap.fill(Qt::transparent);
+        QPainter pixPainter(&m_mapPixmap);
+        pixPainter.setRenderHint(QPainter::Antialiasing);
+        m_svgRenderer->render(&pixPainter, QRectF(0, 0, 1000, 600));
+    }
 }
 
 void MapView::buildMapRegions()
 {
-    // Minimalist / Cyber low-poly representations of regions
-    // Coordinate space: 1000x600
+    // Equirectangular projection: 1000 x 600 coordinate space.
+    //   x = (lon + 180) / 360 * 1000
+    //   y = (90  - lat) / 180 * 600
+    auto gp = [](qreal lon, qreal lat) -> QPointF {
+        return { (lon + 180.0) / 360.0 * 1000.0,
+                 (90.0 - lat)  / 180.0 * 600.0 };
+    };
 
-    // North America
-    QPainterPath na;
-    na.moveTo(50, 100); na.lineTo(300, 80); na.lineTo(380, 180); 
-    na.lineTo(300, 280); na.lineTo(150, 280); na.lineTo(50, 200); na.closeSubpath();
-    m_regions["North America"] = na;
+    auto makePath = [](const QVector<QPointF>& pts) -> QPainterPath {
+        QPainterPath path;
+        if (pts.isEmpty()) return path;
+        path.moveTo(pts[0]);
+        for (int i = 1; i < pts.size(); ++i)
+            path.lineTo(pts[i]);
+        path.closeSubpath();
+        return path;
+    };
 
-    // South America
-    QPainterPath sa;
-    sa.moveTo(280, 320); sa.lineTo(380, 320); sa.lineTo(420, 420);
-    sa.lineTo(350, 580); sa.lineTo(280, 450); na.closeSubpath();
-    m_regions["South America"] = sa;
+    // ---- North America ----
+    // Full perimeter: SW Alaska → Arctic coast → Labrador → E coast → Florida peninsula
+    // → Gulf coast → Mexico → Central America (both coasts) → Pacific coast → back north.
+    // No ocean jumps: every segment follows land or near coastline.
+    m_regions["North America"] = makePath({
+        // SW Alaska and Pacific coast south
+        gp(-168, 54), gp(-163, 55), gp(-152, 57), gp(-148, 61), gp(-136, 57),
+        gp(-130, 54), gp(-124, 49), gp(-124, 42), gp(-117, 32), gp(-110, 23),
+        gp(-106, 20), gp(-97,  16),
+        // Central America — Pacific coast going south
+        gp(-92,  14), gp(-87,  13), gp(-85,  10), gp(-79,   8),
+        // Central America — Caribbean coast going north
+        gp(-82,   9), gp(-83,  10), gp(-87,  16), gp(-88,  16), gp(-87,  21),
+        // Gulf coast
+        gp(-97,  22), gp(-97,  26), gp(-94,  29), gp(-90,  29), gp(-89,  30), gp(-84,  30),
+        // Florida peninsula
+        gp(-82,  28), gp(-82,  24), gp(-80,  25), gp(-80,  27), gp(-81,  30), gp(-80,  32),
+        // US East coast going north
+        gp(-76,  35), gp(-75,  38), gp(-74,  40), gp(-70,  42), gp(-66,  44), gp(-60,  47),
+        // Arctic coast
+        gp(-65,  60), gp(-78,  63), gp(-85,  72), gp(-95,  73), gp(-120, 72), gp(-140, 70),
+        gp(-165, 68)
+    });
 
-    // Western Europe
-    QPainterPath weu;
-    weu.moveTo(420, 150); weu.lineTo(480, 150); weu.lineTo(480, 220);
-    weu.lineTo(420, 220); weu.closeSubpath();
-    m_regions["Western Europe"] = weu;
-    
-    // Northern Europe
-    QPainterPath neu;
-    neu.moveTo(480, 50); neu.lineTo(580, 50); neu.lineTo(580, 140);
-    neu.lineTo(480, 140); neu.closeSubpath();
-    m_regions["Northern Europe"] = neu;
+    // ---- South America ----
+    // N coast → Brazil's eastern bulge → Río de la Plata → Patagonia → Pacific coast back north.
+    m_regions["South America"] = makePath({
+        gp(-78,  12), gp(-73,  11), gp(-63,  10), gp(-52,   4),
+        gp(-35,  -5),                               // Brazil NE bulge (Recife)
+        gp(-38, -13), gp(-43, -23),                 // Salvador → Rio de Janeiro
+        gp(-48, -28), gp(-52, -33), gp(-58, -34),   // Porto Alegre → Buenos Aires
+        gp(-62, -42), gp(-65, -55), gp(-68, -54),   // Patagonia → Tierra del Fuego
+        gp(-72, -50), gp(-75, -38), gp(-80,  -3), gp(-78,   8)
+    });
 
-    // Eastern Europe / Russia
-    QPainterPath rus;
-    rus.moveTo(580, 40); rus.lineTo(950, 40); rus.lineTo(950, 150);
-    rus.lineTo(580, 150); rus.closeSubpath();
-    m_regions["Russia / CIS"] = rus;
+    // ---- Western Europe ----
+    // Portugal SW → Mediterranean → N Sea → English Channel → Bay of Biscay.
+    m_regions["Western Europe"] = makePath({
+        gp(-9,  36), gp(-5,  36), gp( 0,  38), gp( 3,  43), gp( 5,  44),
+        gp( 8,  44), gp(10,  44), gp(13,  47), gp(18,  47), gp(20,  55),
+        gp(14,  57), gp( 8,  55), gp( 4,  52), gp( 2,  51),
+        gp(-1,  51), gp(-5,  50), gp(-4,  48), gp(-2,  47),
+        gp(-1,  44), gp(-2,  43), gp(-8,  44), gp(-9,  39)
+    });
 
-    // Africa
-    QPainterPath af;
-    af.moveTo(420, 240); af.lineTo(580, 240); af.lineTo(620, 380);
-    af.lineTo(550, 550); af.lineTo(450, 550); af.lineTo(400, 350); af.closeSubpath();
-    m_regions["Africa"] = af;
+    // ---- Italy ---- (the recognizable boot shape)
+    m_regions["Italy"] = makePath({
+        gp( 7,  44), gp( 9,  44), gp(12,  44), gp(14,  45),  // Genoa → Venice → Trieste
+        gp(14,  43), gp(16,  41), gp(18,  40),                 // Adriatic coast → Heel
+        gp(16,  38), gp(15,  38),                               // Toe tip
+        gp(16,  39), gp(14,  40), gp(12,  42)                  // Naples → Rome coast
+    });
 
-    // Middle East
-    QPainterPath me;
-    me.moveTo(580, 200); me.lineTo(680, 200); me.lineTo(680, 280);
-    me.lineTo(580, 280); me.closeSubpath();
-    m_regions["Middle East"] = me;
+    // ---- United Kingdom ----
+    m_regions["United Kingdom"] = makePath({
+        gp(-5,  50), gp( 2,  51), gp( 0,  53), gp(-1,  55),
+        gp(-2,  57), gp(-3,  56), gp(-4,  58), gp(-5,  58),
+        gp(-5,  57), gp(-5,  56), gp(-5,  53), gp(-4,  51), gp(-3,  50)
+    });
 
-    // East Asia (China, Japan, etc.)
-    QPainterPath eas;
-    eas.moveTo(750, 160); eas.lineTo(980, 160); eas.lineTo(980, 350);
-    eas.lineTo(750, 350); eas.closeSubpath();
-    m_regions["East Asia"] = eas;
+    // ---- Ireland ----
+    m_regions["Ireland"] = makePath({
+        gp(-10, 51), gp(-8,  52), gp(-6,  52), gp(-6,  54),
+        gp(-8,  55), gp(-10, 54), gp(-10, 52)
+    });
 
-    // South Asia (India, etc.)
-    QPainterPath sas;
-    sas.moveTo(680, 280); sas.lineTo(780, 280); sas.lineTo(780, 400);
-    sas.lineTo(680, 400); sas.closeSubpath();
-    m_regions["South Asia"] = sas;
+    // ---- Northern Europe (Scandinavia + Finland) ----
+    m_regions["Northern Europe"] = makePath({
+        gp( 5,  57), gp( 8,  55), gp(12,  56), gp(18,  57), gp(24,  57),
+        gp(28,  60), gp(30,  60), gp(28,  65), gp(25,  68),
+        gp(18,  70), gp(14,  65), gp( 5,  62)
+    });
 
-    // Oceania
-    QPainterPath oc;
-    oc.moveTo(820, 420); oc.lineTo(980, 420); oc.lineTo(980, 580);
-    oc.lineTo(820, 580); oc.closeSubpath();
-    m_regions["Oceania"] = oc;
+    // ---- Russia / CIS ----
+    // Baltic → Black Sea → Caucasus → Central Asia → Siberia → Arctic coast.
+    m_regions["Russia / CIS"] = makePath({
+        gp(28,  56), gp(40,  47), gp(45,  42), gp(55,  42), gp(65,  38),
+        gp(80,  42), gp(100, 50), gp(130, 43), gp(140, 46),
+        gp(152, 48), gp(163, 60), gp(165, 63), gp(160, 68),
+        gp(140, 72), gp(100, 73), gp(70,  73), gp(50,  72),
+        gp(30,  72), gp(28,  65), gp(30,  60)
+    });
+
+    // ---- Africa ----
+    // NW Morocco → Mediterranean coast → Horn of Africa → E coast → Cape of Good Hope
+    // → W coast → Gulf of Guinea detail → Senegal → Mauritania → Morocco.
+    m_regions["Africa"] = makePath({
+        gp(-6,  35), gp( 5,  37), gp(10,  37), gp(25,  34), gp(33,  32),
+        gp(38,  22),                                            // Red Sea / Eritrea
+        gp(43,  12), gp(51,  12), gp(51,  10),                 // Horn of Africa
+        gp(44,   2), gp(40,  -2), gp(40, -11), gp(35, -18),
+        gp(33, -28), gp(27, -35), gp(18, -35), gp(15, -33),   // Cape of Good Hope
+        gp(12, -17), gp( 9,   0), gp( 9,   4),                 // Congo/Cameroon coast
+        // Gulf of Guinea — the critical westward concave detail
+        gp( 7,   4), gp( 3,   5), gp( 0,   5), gp(-5,   5), gp(-8,   5),
+        gp(-13,  8), gp(-15, 10), gp(-17, 14),                 // Sierra Leone → Senegal
+        gp(-18, 16), gp(-17, 21), gp(-13, 28)                  // Mauritania → S Morocco
+    });
+
+    // ---- Middle East ----
+    m_regions["Middle East"] = makePath({
+        gp(26,  37), gp(36,  37), gp(43,  37), gp(58,  22),
+        gp(57,  15), gp(45,  12), gp(38,  22),
+        gp(32,  30), gp(33,  32), gp(35,  37)
+    });
+
+    // ---- South Asia (Indian subcontinent) ----
+    // Pakistan NW → Nepal/NE India → Bay of Bengal → southern tip → Malabar coast.
+    m_regions["South Asia"] = makePath({
+        gp(62,  38), gp(97,  35), gp(97,  22), gp(92,  22),
+        gp(80,   8), gp(77,   8),               // Southern tip (Kanyakumari)
+        gp(72,  20), gp(65,  22), gp(62,  28)
+    });
+
+    // ---- East Asia ----
+    // Siberia/China border → Korean peninsula → China coast → SE Asia
+    // → Indonesian archipelago → back north.
+    m_regions["East Asia"] = makePath({
+        gp(100, 55), gp(130, 50), gp(130, 43),
+        gp(128, 35), gp(126, 34), gp(127, 37), gp(125, 40),    // Korean peninsula
+        gp(121, 31), gp(115, 22), gp(108, 20), gp(102, 10),
+        gp(103,  3),                                             // Singapore / Malay Peninsula
+        gp(100, -5), gp(110, -8), gp(120, -5),                 // Sumatra → Java → Borneo S
+        gp(118,  5), gp(115, 20), gp(108, 22), gp(100, 22)
+    });
+
+    // ---- Japan ----
+    m_regions["Japan"] = makePath({
+        gp(130, 34), gp(130, 31), gp(131, 32), gp(132, 33),
+        gp(135, 34), gp(138, 35), gp(141, 36),
+        gp(141, 40), gp(143, 44), gp(145, 44),
+        gp(141, 45), gp(141, 42), gp(140, 38), gp(139, 35), gp(136, 35)
+    });
+
+    // ---- Oceania (Australia) ----
+    m_regions["Oceania"] = makePath({
+        gp(114, -22), gp(114, -15), gp(122, -14), gp(130, -12),
+        gp(136, -12), gp(139, -14), gp(143, -11),               // Cape York N tip
+        gp(148, -20), gp(154, -22), gp(153, -28),
+        gp(150, -38), gp(145, -38), gp(137, -35),
+        gp(130, -32), gp(117, -35), gp(114, -28)
+    });
+
+    // ---- New Zealand ---- (North Island simplified)
+    m_regions["New Zealand"] = makePath({
+        gp(173, -34), gp(178, -37), gp(176, -39), gp(175, -41),
+        gp(172, -40), gp(172, -36)
+    });
+
+    // ---- Greenland ----
+    m_regions["Greenland"] = makePath({
+        gp(-73, 76), gp(-50, 83), gp(-25, 83), gp(-18, 77),
+        gp(-22, 70), gp(-45, 60), gp(-65, 63)
+    });
 
     // Initialize highlight intensity for all regions to 0
-    for (const QString& key : m_regions.keys()) {
+    for (const QString& key : m_regions.keys())
         m_regionHighlights[key] = 0.0;
-    }
 }
 
 void MapView::addConnection(const QString& eventType)
@@ -153,7 +284,7 @@ void MapView::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Deep cyber background
+    // Deep cyber background (ocean color — shows through transparent SVG ocean areas)
     painter.fillRect(rect(), QColor("#090C10"));
 
     painter.save();
@@ -162,46 +293,46 @@ void MapView::paintEvent(QPaintEvent* event)
     qreal scaleY = height() / 600.0;
     painter.scale(scaleX, scaleY);
 
-    // Draw background grid
-    QPen gridPen(QColor(30, 40, 60, 150));
+    // --- Layer 1: SVG world map (detailed coastlines, pre-rendered) ---
+    if (!m_mapPixmap.isNull())
+        painter.drawPixmap(0, 0, m_mapPixmap);
+
+    // --- Layer 2: subtle dot grid for the cyber aesthetic ---
+    QPen gridPen(QColor(30, 40, 60, 60));
     gridPen.setWidthF(1.0);
     gridPen.setStyle(Qt::DotLine);
     painter.setPen(gridPen);
     for (int x = 0; x <= 1000; x += 50) painter.drawLine(x, 0, x, 600);
     for (int y = 0; y <= 600; y += 50) painter.drawLine(0, y, 1000, y);
 
-    // Draw the World Regions (Polygons)
+    // --- Layer 3: region highlight overlays ---
+    // Idle regions are fully transparent — the SVG handles the visual.
+    // Polygons only appear as glowing cyan overlays when a packet arrives.
+    QFont labelFont("Consolas", 10, QFont::Bold);
+    painter.setFont(labelFont);
     for (auto it = m_regions.begin(); it != m_regions.end(); ++it) {
         const QString& regionName = it.key();
         const QPainterPath& path = it.value();
         qreal highlight = m_regionHighlights.value(regionName, 0.0);
 
-        // Base idle colors
-        QColor fillColor(20, 30, 50, 100);
-        QColor edgeColor(50, 80, 120, 150);
-
-        // Mix in highlight color (Cyan) when active
         if (highlight > 0.0) {
-            int r = 20 + (0 - 20) * highlight;
-            int g = 30 + (255 - 30) * highlight;
-            int b = 50 + (255 - 50) * highlight;
-            fillColor = QColor(r, g, b, 100 + 100 * highlight); // Brighter fill
-            edgeColor = QColor(0, 255, 255, 150 + 105 * highlight); // Glowing cyan edge
+            int r = static_cast<int>(0   * highlight);
+            int g = static_cast<int>(255 * highlight);
+            int b = static_cast<int>(255 * highlight);
+            QColor fillColor(r, g, b, static_cast<int>(120 * highlight));
+            QColor edgeColor(0, 255, 255, static_cast<int>(255 * highlight));
+
+            painter.setBrush(fillColor);
+            QPen regionPen(edgeColor);
+            regionPen.setWidthF(2.5);
+            painter.setPen(regionPen);
+            painter.drawPath(path);
+
+            // Label appears bright white when the region is active
+            painter.setPen(QColor(255, 255, 255, static_cast<int>(230 * highlight)));
+            QPointF center = path.boundingRect().center();
+            painter.drawText(QRectF(center.x() - 70, center.y() - 10, 140, 20), Qt::AlignCenter, regionName);
         }
-
-        painter.setBrush(fillColor);
-        QPen regionPen(edgeColor);
-        regionPen.setWidthF(highlight > 0 ? 3.0 : 1.0);
-        painter.setPen(regionPen);
-        painter.drawPath(path);
-
-        // Draw Region Label in the center of its polygon
-        painter.setPen(QColor(100, 130, 170));
-        QFont font("Consolas", 10, QFont::Bold);
-        painter.setFont(font);
-        QPointF center = path.boundingRect().center();
-        // Adjust text origin so it's roughly centered
-        painter.drawText(QRectF(center.x() - 60, center.y() - 10, 120, 20), Qt::AlignCenter, regionName); 
     }
 
     // Draw the animated data connections
