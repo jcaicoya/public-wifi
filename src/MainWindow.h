@@ -98,6 +98,7 @@ private:
     // C
     MapView* m_mapViewC = nullptr;
     QTextEdit* m_filteredTrafficViewC = nullptr;
+    QPushButton* m_demoBtnC = nullptr;
 
     // D
     QTextEdit* m_statsPlaceholderD = nullptr;

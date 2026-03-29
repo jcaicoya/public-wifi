@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QFont>
 #include <QFile>
+#include <QResizeEvent>
 #include <QSvgRenderer>
 
 MapView::MapView(QWidget* parent)
@@ -17,19 +18,55 @@ MapView::MapView(QWidget* parent)
     // Uses the same SVG-aligned projection as buildMapRegions().
     m_phonePos = svgCoord(-5.845, 43.361);
 
-    // Dictionary mapping Services to Geographic Regions
-    m_serviceToRegion["SEARCH"]    = "North America";
-    m_serviceToRegion["APPLE"]     = "North America";
-    m_serviceToRegion["MICROSOFT"] = "North America";
-    m_serviceToRegion["AMAZON"]    = "Western Europe";
-    m_serviceToRegion["WHATSAPP"]  = "Northern Europe"; 
-    m_serviceToRegion["VIDEO"]     = "East Asia";
-    m_serviceToRegion["SOCIAL"]    = "North America";
-    m_serviceToRegion["CDN"]       = "Western Europe";
+    // Service → region dictionary.
+    // Each entry answers: "where does this traffic physically go from Spain?"
+    // Regions must match keys in m_regions (built in buildMapRegions).
+
+    // ── North America ── (US tech headquarters)
+    m_serviceToRegion["SEARCH"]    = "North America";   // Google — Mountain View CA
+    m_serviceToRegion["APPLE"]     = "North America";   // Apple — Cupertino CA
+    m_serviceToRegion["SOCIAL"]    = "North America";   // Facebook/Instagram — Menlo Park CA
+    m_serviceToRegion["MAPS"]      = "North America";   // Google Maps servers
+
+    // ── Northern Europe ── (Meta EU / Microsoft Azure EU datacentres)
+    m_serviceToRegion["WHATSAPP"]  = "Northern Europe"; // Meta EU — Netherlands/Denmark
+    m_serviceToRegion["MICROSOFT"] = "Northern Europe"; // Azure EU West — Dublin / Amsterdam
+
+    // ── Western Europe ── (AWS EU, EU financial & media infrastructure)
+    m_serviceToRegion["AMAZON"]    = "Western Europe";  // AWS eu-west-1 — Ireland/Frankfurt
+    m_serviceToRegion["EMAIL"]     = "Western Europe";  // Gmail EU, Outlook EU
+    m_serviceToRegion["BANKING"]   = "Western Europe";  // EU banking — Frankfurt/Amsterdam
+    m_serviceToRegion["NEWS"]      = "Western Europe";  // BBC, Reuters, El País
+    m_serviceToRegion["CDN"]       = "Western Europe";  // Cloudflare EU PoPs
+    m_serviceToRegion["SHOPPING"]  = "Western Europe";  // EU e-commerce
+
+    // ── East Asia ── (streaming CDN, gaming, TikTok APAC)
+    m_serviceToRegion["VIDEO"]     = "East Asia";       // YouTube APAC / TikTok CDN
+    m_serviceToRegion["STREAMING"] = "East Asia";       // Netflix/Spotify APAC
+    m_serviceToRegion["GAMING"]    = "East Asia";       // Steam Asia / PlayStation
+
+    // ── Russia / CIS ── (VPN exit nodes — dramatic routing reveal)
+    m_serviceToRegion["VPN"]       = "Russia / CIS";
+
+    // ── South Asia ── (Indian tech-services, app analytics)
+    m_serviceToRegion["TELEMETRY"] = "South Asia";      // Crashlytics, Firebase India nodes
+
+    // ── Middle East ── (regional news, Islamic banking)
+    m_serviceToRegion["REGIONAL"]  = "Middle East";
+
+    // ── South America ── (WhatsApp Latin backbone, local social)
+    m_serviceToRegion["LATAM"]     = "South America";
+
+    // ── Oceania ── (antipodal CDN edge)
+    m_serviceToRegion["PACIFIC"]   = "Oceania";
     
     m_animationTimer = new QTimer(this);
     connect(m_animationTimer, &QTimer::timeout, this, &MapView::updateAnimations);
     m_animationTimer->start(30); // ~33 FPS
+
+    m_rebuildTimer = new QTimer(this);
+    m_rebuildTimer->setSingleShot(true);
+    connect(m_rebuildTimer, &QTimer::timeout, this, &MapView::rebuildBackground);
 
     // Load the SVG world map, restyle it for the cyber theme, and pre-render once.
     // Borders-only look: land fill removed, borders drawn in dim cyan-blue.
@@ -37,27 +74,14 @@ MapView::MapView(QWidget* parent)
     QFile svgFile(QStringLiteral(":/world_map.svg"));
     if (svgFile.open(QIODevice::ReadOnly)) {
         QByteArray svgData = svgFile.readAll();
-
-        // Remove land fill (both "fill:#e0e0e0" and "fill: #e0e0e0" variants in the SVG CSS)
         svgData.replace("fill:#e0e0e0", "fill:none");
         svgData.replace("fill: #e0e0e0", "fill:none");
-
-        // Borders: white country borders → dim cyber blue; black circles → same
         svgData.replace("stroke:#ffffff", "stroke:#1a8cbf");
         svgData.replace("stroke:#000000", "stroke:#1a8cbf");
-
-        // Make strokes thick enough to be visible at our render resolution
         svgData.replace("stroke-width:0.5", "stroke-width:3.0");
         svgData.replace("stroke-width:0.3", "stroke-width:2.0");
-
         m_svgRenderer = new QSvgRenderer(svgData, this);
-
-        // Render once at virtual 1000×600 resolution
-        m_mapPixmap = QPixmap(1000, 600);
-        m_mapPixmap.fill(Qt::transparent);
-        QPainter pixPainter(&m_mapPixmap);
-        pixPainter.setRenderHint(QPainter::Antialiasing);
-        m_svgRenderer->render(&pixPainter, QRectF(0, 0, 1000, 600));
+        // m_bgPixmap is built in resizeEvent / rebuildBackground() once the widget has a size.
     }
 }
 
@@ -285,26 +309,65 @@ void MapView::updateAnimations()
 {
     m_pulsePhase = (m_pulsePhase + 1) % 40;
 
+    bool dirty = false; // track whether anything actually changed
+
     // Fade out region highlights over time
     for (auto it = m_regionHighlights.begin(); it != m_regionHighlights.end(); ++it) {
         if (it.value() > 0.0) {
-            it.value() -= 0.03; // Fade speed
+            it.value() -= 0.03;
             if (it.value() < 0.0) it.value() = 0.0;
+            dirty = true;
         }
     }
 
     // Move packets along the lines
     for (int i = m_connections.size() - 1; i >= 0; --i) {
         m_connections[i].progress += 0.015; // Packet speed
-        
+        dirty = true;
+
         if (m_connections[i].progress >= 1.0) {
-            // Flash the whole region when the packet arrives!
             m_regionHighlights[m_connections[i].targetRegion] = 1.0;
             m_connections.removeAt(i);
         }
     }
     
-    update();
+    // Pulse ring always animates; skip repaint only when the map is fully idle
+    if (dirty || !m_connections.isEmpty())
+        update();
+    else if (m_pulsePhase % 4 == 0)   // still repaint for pulse ring, but at 8 fps when idle
+        update();
+}
+
+void MapView::rebuildBackground()
+{
+    if (!m_svgRenderer || width() == 0 || height() == 0) return;
+
+    // Render SVG + grid into a single pixmap at the real widget resolution.
+    // This is called once on first show and again on every resize.
+    // paintEvent can then blit it at 1:1 — no per-frame scaling, no dotted-line recalc.
+    m_bgPixmap = QPixmap(width(), height());
+    m_bgPixmap.fill(QColor("#090C10"));
+
+    QPainter p(&m_bgPixmap);
+    p.setRenderHint(QPainter::Antialiasing);
+
+    // SVG at full widget resolution
+    m_svgRenderer->render(&p, QRectF(0, 0, width(), height()));
+
+    // Grid in virtual 1000×600 space, scaled to match
+    p.scale(width() / 1000.0, height() / 600.0);
+    QPen gridPen(QColor(30, 40, 60, 55));
+    gridPen.setWidthF(0.8);
+    gridPen.setStyle(Qt::DotLine);
+    p.setPen(gridPen);
+    for (int x = 0; x <= 1000; x += 50) p.drawLine(x, 0, x, 600);
+    for (int y = 0; y <= 600; y += 50) p.drawLine(0, y, 1000, y);
+}
+
+void MapView::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    m_rebuildTimer->start(150); // debounce: rebuild only after resize settles
 }
 
 void MapView::paintEvent(QPaintEvent* event)
@@ -313,26 +376,17 @@ void MapView::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Deep cyber background (ocean color — shows through transparent SVG ocean areas)
-    painter.fillRect(rect(), QColor("#090C10"));
+    // --- Layer 1+2: background (SVG + grid) — single 1:1 blit, zero scaling cost ---
+    // Never call rebuildBackground() from paintEvent; the debounce timer owns it.
+    if (!m_bgPixmap.isNull())
+        painter.drawPixmap(0, 0, m_bgPixmap);
+    else
+        painter.fillRect(rect(), QColor("#090C10"));
 
     painter.save();
-    // Scale local 1000x600 coordinates to fit the actual widget size
-    qreal scaleX = width() / 1000.0;
-    qreal scaleY = height() / 600.0;
+    const qreal scaleX = width() / 1000.0;
+    const qreal scaleY = height() / 600.0;
     painter.scale(scaleX, scaleY);
-
-    // --- Layer 1: SVG world map (detailed coastlines, pre-rendered) ---
-    if (!m_mapPixmap.isNull())
-        painter.drawPixmap(0, 0, m_mapPixmap);
-
-    // --- Layer 2: subtle dot grid for the cyber aesthetic ---
-    QPen gridPen(QColor(30, 40, 60, 60));
-    gridPen.setWidthF(1.0);
-    gridPen.setStyle(Qt::DotLine);
-    painter.setPen(gridPen);
-    for (int x = 0; x <= 1000; x += 50) painter.drawLine(x, 0, x, 600);
-    for (int y = 0; y <= 600; y += 50) painter.drawLine(0, y, 1000, y);
 
     // --- Layer 3: region highlight overlays ---
     // Idle regions are fully transparent — the SVG handles the visual.

@@ -107,6 +107,14 @@ MainWindow::MainWindow(bool demoMode, QWidget* parent)
         if (m_console3) m_console3->setPlainText("Running in DEMO MODE...\nLogs disabled.");
         if (m_console4) m_console4->setPlainText("Running in DEMO MODE...\nConnections hidden.");
         startDemoMode();
+        if (m_demoBtnC) {
+            m_demoBtnC->setText("■  Stop Demo");
+            m_demoBtnC->setStyleSheet(
+                "QPushButton { background:#2b0d0d; color:#FF3333; border:1px solid #FF3333; "
+                "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
+                "QPushButton:hover { background:#401a1a; }"
+            );
+        }
     } else {
         m_routerRetryTimer = new QTimer(this);
         connect(m_routerRetryTimer, &QTimer::timeout, this, &MainWindow::tryConnectRouter);
@@ -463,10 +471,42 @@ void MainWindow::buildPageC()
     auto* eventsTitle = new QLabel("Selected Device Events", eventsPane);
     eventsTitle->setFont(titleFont);
 
+    m_demoBtnC = new QPushButton("▶  Demo Mode", eventsPane);
+    m_demoBtnC->setStyleSheet(
+        "QPushButton { background:#0d2b10; color:#00FF44; border:1px solid #00FF44; "
+        "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
+        "QPushButton:hover { background:#1a4020; }"
+    );
+    connect(m_demoBtnC, &QPushButton::clicked, this, [this]() {
+        if (m_demoTimer) {
+            m_demoTimer->stop();
+            m_demoTimer->deleteLater();
+            m_demoTimer = nullptr;
+            m_demoBtnC->setText("▶  Demo Mode");
+            m_demoBtnC->setStyleSheet(
+                "QPushButton { background:#0d2b10; color:#00FF44; border:1px solid #00FF44; "
+                "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
+                "QPushButton:hover { background:#1a4020; }"
+            );
+            statusBar()->showMessage("Demo mode stopped.", 2000);
+        } else {
+            startDemoMode();
+            if (m_demoTimer) {
+                m_demoBtnC->setText("■  Stop Demo");
+                m_demoBtnC->setStyleSheet(
+                    "QPushButton { background:#2b0d0d; color:#FF3333; border:1px solid #FF3333; "
+                    "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
+                    "QPushButton:hover { background:#401a1a; }"
+                );
+            }
+        }
+    });
+
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
     m_filteredTrafficViewC->setReadOnly(true);
 
     eventsLayout->addWidget(eventsTitle);
+    eventsLayout->addWidget(m_demoBtnC);
     eventsLayout->addWidget(m_filteredTrafficViewC, 1);
 
     splitter->addWidget(mapPane);
@@ -922,6 +962,12 @@ void MainWindow::startDemoMode()
         return;
     }
 
+    // Stop the router retry timer — its blocking waitForConnected() call is the
+    // source of periodic ~2 s freezes when the router is unreachable.
+    if (m_routerRetryTimer) {
+        m_routerRetryTimer->stop();
+    }
+
     QFile file(":/demo_events.json");
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Could not open demo events file!";
@@ -942,7 +988,7 @@ void MainWindow::startDemoMode()
 
     m_demoTimer = new QTimer(this);
     connect(m_demoTimer, &QTimer::timeout, this, &MainWindow::onDemoTimerTick);
-    m_demoTimer->start(1500); // 1.5 seconds per event for better visual pacing
+    m_demoTimer->start(600); // 0.6 s per event
 
     statusBar()->showMessage("Virtual Router (Demo Mode) Started", 3000);
 }

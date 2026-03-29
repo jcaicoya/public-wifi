@@ -32,6 +32,7 @@ public slots:
 
 protected:
     void paintEvent(QPaintEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
     void updateAnimations();
@@ -50,5 +51,8 @@ private:
     QPointF m_phonePos;
 
     QSvgRenderer* m_svgRenderer = nullptr;
-    QPixmap m_mapPixmap;
+    QPixmap m_bgPixmap;         // SVG + grid combined, rebuilt on stable resize
+    QTimer*  m_rebuildTimer = nullptr;  // debounce for resizeEvent
+
+    void rebuildBackground();
 };
