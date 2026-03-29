@@ -110,7 +110,9 @@ QPointF MapView::svgCoord(qreal lon, qreal lat)
 void MapView::buildMapRegions()
 {
     // All region vertices use svgCoord(lon, lat) so highlights align with the SVG map.
-    auto gp = [this](qreal lon, qreal lat) -> QPointF {
+    // Coordinates calibrated from computed virtual-space positions (1000×600).
+    // Only regions that appear in m_serviceToRegion are defined — no dead polygons.
+    auto gp = [](qreal lon, qreal lat) -> QPointF {
         return svgCoord(lon, lat);
     };
 
@@ -124,160 +126,178 @@ void MapView::buildMapRegions()
         return path;
     };
 
-    // ---- North America ----
-    // Full perimeter: SW Alaska → Arctic coast → Labrador → E coast → Florida peninsula
-    // → Gulf coast → Mexico → Central America (both coasts) → Pacific coast → back north.
-    // No ocean jumps: every segment follows land or near coastline.
-    m_regions["North America"] = makePath({
-        // SW Alaska and Pacific coast south
-        gp(-168, 54), gp(-163, 55), gp(-152, 57), gp(-148, 61), gp(-136, 57),
-        gp(-130, 54), gp(-124, 49), gp(-124, 42), gp(-117, 32), gp(-110, 23),
-        gp(-106, 20), gp(-97,  16),
-        // Central America — Pacific coast going south
-        gp(-92,  14), gp(-87,  13), gp(-85,  10), gp(-79,   8),
-        // Central America — Caribbean coast going north
-        gp(-82,   9), gp(-83,  10), gp(-87,  16), gp(-88,  16), gp(-87,  21),
-        // Gulf coast
-        gp(-97,  22), gp(-97,  26), gp(-94,  29), gp(-90,  29), gp(-89,  30), gp(-84,  30),
-        // Florida peninsula
-        gp(-82,  28), gp(-82,  24), gp(-80,  25), gp(-80,  27), gp(-81,  30), gp(-80,  32),
-        // US East coast going north
-        gp(-76,  35), gp(-75,  38), gp(-74,  40), gp(-70,  42), gp(-66,  44), gp(-60,  47),
-        // Arctic coast
-        gp(-65,  60), gp(-78,  63), gp(-85,  72), gp(-95,  73), gp(-120, 72), gp(-140, 70),
-        gp(-165, 68)
-    });
+   // ---- North America ----  [19 nodes]
+m_regions["North America"] = makePath({
+    gp( -145.0,   61.8),  // (  65,   92)
+    gp( -155.1,   51.9),  // (  36,  132)
+    gp( -121.9,   55.4),  // ( 129,  118)
+    gp( -125.2,   29.4),  // ( 119,  223)
+    gp( -103.2,   11.9),  // ( 180,  294)
+    gp(  -88.4,   19.0),  // ( 222,  265)
+    gp(  -91.4,   23.0),  // ( 213,  249)
+    gp( -100.0,   21.4),  // ( 189,  255)
+    gp(  -97.2,   26.5),  // ( 197,  235)
+    gp(  -88.4,   28.5),  // ( 222,  227)
+    gp(  -84.3,   24.1),  // ( 233,  244)
+    gp(  -80.5,   31.1),  // ( 244,  216)
+    gp(  -72.0,   39.3),  // ( 267,  183)
+    gp(  -61.0,   43.2),  // ( 298,  167)
+    gp(  -46.5,   47.2),  // ( 338,  151)
+    gp(  -48.3,   59.7),  // ( 333,  100)
+    gp(  -66.0,   67.6),  // ( 284,   68)
+    gp( -100.0,   72.0),  // ( 189,   51)
+    gp( -125.8,   72.1),  // ( 118,   50)
+});
 
-    // ---- South America ----
-    // N coast → Brazil's eastern bulge → Río de la Plata → Patagonia → Pacific coast back north.
-    m_regions["South America"] = makePath({
-        gp(-78,  12), gp(-73,  11), gp(-63,  10), gp(-52,   4),
-        gp(-35,  -5),                               // Brazil NE bulge (Recife)
-        gp(-38, -13), gp(-43, -23),                 // Salvador → Rio de Janeiro
-        gp(-48, -28), gp(-52, -33), gp(-58, -34),   // Porto Alegre → Buenos Aires
-        gp(-62, -42), gp(-65, -55), gp(-68, -54),   // Patagonia → Tierra del Fuego
-        gp(-72, -50), gp(-75, -38), gp(-80,  -3), gp(-78,   8)
-    });
+// ---- South America ----  [18 nodes]
+m_regions["South America"] = makePath({
+    gp(  -88.4,   19.1),  // ( 222,  264)
+    gp(  -91.1,   23.0),  // ( 214,  249)
+    gp(  -84.4,   24.2),  // ( 233,  244)
+    gp(  -81.4,   28.5),  // ( 241,  226)
+    gp(  -63.3,   17.5),  // ( 291,  271)
+    gp(  -60.1,    8.0),  // ( 300,  310)
+    gp(  -35.0,   -8.0),  // ( 370,  374)
+    gp(  -41.8,  -24.8),  // ( 351,  442)
+    gp(  -51.5,  -37.0),  // ( 324,  491)
+    gp(  -59.4,  -48.7),  // ( 302,  539)
+    gp(  -53.9,  -58.5),  // ( 317,  578)
+    gp(  -62.4,  -58.5),  // ( 294,  578)
+    gp(  -72.3,  -50.9),  // ( 266,  548)
+    gp(  -75.0,  -34.2),  // ( 259,  480)
+    gp(  -76.7,  -21.3),  // ( 254,  428)
+    gp(  -89.4,   -8.1),  // ( 219,  375)
+    gp(  -87.3,    4.8),  // ( 225,  323)
+    gp( -102.9,   11.9),  // ( 181,  294)
+});
 
-    // ---- Western Europe ----
-    // Portugal SW → Mediterranean → N Sea → English Channel → Bay of Biscay.
-    m_regions["Western Europe"] = makePath({
-        gp(-9,  36), gp(-5,  36), gp( 0,  38), gp( 3,  43), gp( 5,  44),
-        gp( 8,  44), gp(10,  44), gp(13,  47), gp(18,  47), gp(20,  55),
-        gp(14,  57), gp( 8,  55), gp( 4,  52), gp( 2,  51),
-        gp(-1,  51), gp(-5,  50), gp(-4,  48), gp(-2,  47),
-        gp(-1,  44), gp(-2,  43), gp(-8,  44), gp(-9,  39)
-    });
+// ---- Western Europe ----  [7 nodes]
+m_regions["Western Europe"] = makePath({
+    gp(   -7.3,   48.4),  // ( 447,  146)
+    gp(   10.0,   54.0),  // ( 495,  123)
+    gp(   16.0,   48.0),  // ( 512,  148)
+    gp(    9.0,   45.0),  // ( 492,  160)
+    gp(    3.9,   38.1),  // ( 478,  188)
+    gp(   -5.0,   36.0),  // ( 453,  196)
+    gp(   -9.0,   38.0),  // ( 442,  188)
+});
 
-    // ---- Italy ---- (the recognizable boot shape)
-    m_regions["Italy"] = makePath({
-        gp( 7,  44), gp( 9,  44), gp(12,  44), gp(14,  45),  // Genoa → Venice → Trieste
-        gp(14,  43), gp(16,  41), gp(18,  40),                 // Adriatic coast → Heel
-        gp(16,  38), gp(15,  38),                               // Toe tip
-        gp(16,  39), gp(14,  40), gp(12,  42)                  // Naples → Rome coast
-    });
+// ---- Northern Europe ----  [8 nodes]
+m_regions["Northern Europe"] = makePath({
+    gp(    9.8,   54.5),  // ( 495,  122)
+    gp(   19.4,   55.5),  // ( 521,  117)
+    gp(   29.3,   56.9),  // ( 548,  112)
+    gp(   33.0,   69.0),  // ( 559,   63)
+    gp(   25.3,   72.3),  // ( 538,   49)
+    gp(   16.1,   70.3),  // ( 512,   58)
+    gp(    5.6,   62.8),  // ( 483,   88)
+    gp(    7.9,   57.1),  // ( 489,  111)
+});
 
-    // ---- United Kingdom ----
-    m_regions["United Kingdom"] = makePath({
-        gp(-5,  50), gp( 2,  51), gp( 0,  53), gp(-1,  55),
-        gp(-2,  57), gp(-3,  56), gp(-4,  58), gp(-5,  58),
-        gp(-5,  57), gp(-5,  56), gp(-5,  53), gp(-4,  51), gp(-3,  50)
-    });
+// ---- Russia / CIS ----  [14 nodes]
+m_regions["Russia / CIS"] = makePath({
+    gp(   29.6,   56.3),  // ( 549,  114)
+    gp(   34.0,   52.4),  // ( 562,  130)
+    gp(   49.0,   46.0),  // ( 603,  156)
+    gp(   77.2,   39.7),  // ( 682,  181)
+    gp(   85.6,   49.1),  // ( 705,  143)
+    gp(  106.5,   52.7),  // ( 763,  129)
+    gp(  121.5,   54.7),  // ( 805,  121)
+    gp(  139.4,   45.2),  // ( 855,  159)
+    gp(  163.0,   53.0),  // ( 920,  128)
+    gp(  160.5,   67.4),  // ( 913,   70)
+    gp(  130.0,   72.0),  // ( 828,   51)
+    gp(   77.1,   77.2),  // ( 681,   30)
+    gp(   54.2,   72.6),  // ( 618,   48)
+    gp(   38.8,   68.3),  // ( 575,   66)
+});
 
-    // ---- Ireland ----
-    m_regions["Ireland"] = makePath({
-        gp(-10, 51), gp(-8,  52), gp(-6,  52), gp(-6,  54),
-        gp(-8,  55), gp(-10, 54), gp(-10, 52)
-    });
+// ---- Africa ----  [16 nodes]
+m_regions["Africa"] = makePath({
+    gp(  -16.0,   28.0),  // ( 423,  229)
+    gp(   -4.0,   36.1),  // ( 456,  196)
+    gp(    4.7,   38.1),  // ( 480,  188)
+    gp(   36.9,   31.8),  // ( 570,  213)
+    gp(   42.6,   17.1),  // ( 586,  273)
+    gp(   48.8,    9.9),  // ( 603,  302)
+    gp(   56.7,   11.5),  // ( 625,  295)
+    gp(   46.1,   -4.4),  // ( 595,  359)
+    gp(   59.0,  -17.5),  // ( 631,  413)
+    gp(   50.8,  -29.6),  // ( 608,  462)
+    gp(   20.6,  -38.6),  // ( 524,  498)
+    gp(   12.1,  -23.0),  // ( 501,  435)
+    gp(   13.0,   -9.0),  // ( 503,  378)
+    gp(    5.4,    3.6),  // ( 482,  327)
+    gp(   -7.9,    1.3),  // ( 445,  337)
+    gp(  -19.8,   13.0),  // ( 412,  289)
+});
 
-    // ---- Northern Europe (Scandinavia + Finland) ----
-    m_regions["Northern Europe"] = makePath({
-        gp( 5,  57), gp( 8,  55), gp(12,  56), gp(18,  57), gp(24,  57),
-        gp(28,  60), gp(30,  60), gp(28,  65), gp(25,  68),
-        gp(18,  70), gp(14,  65), gp( 5,  62)
-    });
+// ---- Middle East ----  [11 nodes]
+m_regions["Middle East"] = makePath({
+    gp(   27.3,   41.6),  // ( 543,  174)
+    gp(   38.4,   43.0),  // ( 574,  168)
+    gp(   45.5,   42.4),  // ( 594,  170)
+    gp(   47.3,   38.1),  // ( 599,  188)
+    gp(   54.9,   31.0),  // ( 620,  217)
+    gp(   65.8,   22.9),  // ( 650,  249)
+    gp(   63.3,   17.3),  // ( 643,  272)
+    gp(   47.9,   11.5),  // ( 600,  295)
+    gp(   37.5,   31.5),  // ( 571,  214)
+    gp(   33.7,   35.1),  // ( 561,  200)
+    gp(   29.1,   36.6),  // ( 548,  194)
+});
 
-    // ---- Russia / CIS ----
-    // Baltic → Black Sea → Caucasus → Central Asia → Siberia → Arctic coast.
-    m_regions["Russia / CIS"] = makePath({
-        gp(28,  56), gp(40,  47), gp(45,  42), gp(55,  42), gp(65,  38),
-        gp(80,  42), gp(100, 50), gp(130, 43), gp(140, 46),
-        gp(152, 48), gp(163, 60), gp(165, 63), gp(160, 68),
-        gp(140, 72), gp(100, 73), gp(70,  73), gp(50,  72),
-        gp(30,  72), gp(28,  65), gp(30,  60)
-    });
+// ---- South Asia ----  [12 nodes]
+m_regions["South Asia"] = makePath({
+    gp(   54.6,   31.6),  // ( 619,  214)
+    gp(   45.5,   42.4),  // ( 594,  170)
+    gp(   77.5,   38.9),  // ( 683,  185)
+    gp(  103.3,   30.0),  // ( 754,  220)
+    gp(  108.9,   20.5),  // ( 770,  259)
+    gp(  103.5,   13.5),  // ( 755,  287)
+    gp(   98.6,   20.1),  // ( 741,  261)
+    gp(   89.8,   14.8),  // ( 717,  282)
+    gp(   91.9,    6.7),  // ( 723,  315)
+    gp(   87.5,    2.0),  // ( 710,  334)
+    gp(   73.0,   19.0),  // ( 670,  265)
+    gp(   65.4,   23.3),  // ( 649,  248)
+});
 
-    // ---- Africa ----
-    // NW Morocco → Mediterranean coast → Horn of Africa → E coast → Cape of Good Hope
-    // → W coast → Gulf of Guinea detail → Senegal → Mauritania → Morocco.
-    m_regions["Africa"] = makePath({
-        gp(-6,  35), gp( 5,  37), gp(10,  37), gp(25,  34), gp(33,  32),
-        gp(38,  22),                                            // Red Sea / Eritrea
-        gp(43,  12), gp(51,  12), gp(51,  10),                 // Horn of Africa
-        gp(44,   2), gp(40,  -2), gp(40, -11), gp(35, -18),
-        gp(33, -28), gp(27, -35), gp(18, -35), gp(15, -33),   // Cape of Good Hope
-        gp(12, -17), gp( 9,   0), gp( 9,   4),                 // Congo/Cameroon coast
-        // Gulf of Guinea — the critical westward concave detail
-        gp( 7,   4), gp( 3,   5), gp( 0,   5), gp(-5,   5), gp(-8,   5),
-        gp(-13,  8), gp(-15, 10), gp(-17, 14),                 // Sierra Leone → Senegal
-        gp(-18, 16), gp(-17, 21), gp(-13, 28)                  // Mauritania → S Morocco
-    });
+// ---- East Asia ----  [15 nodes]
+m_regions["East Asia"] = makePath({
+    gp(   86.5,   49.2),  // ( 707,  143)
+    gp(  121.5,   54.3),  // ( 805,  122)
+    gp(  139.7,   45.9),  // ( 855,  156)
+    gp(  147.9,   35.3),  // ( 878,  199)
+    gp(  131.1,   29.8),  // ( 831,  222)
+    gp(  123.5,   20.5),  // ( 810,  259)
+    gp(  132.5,   19.4),  // ( 835,  263)
+    gp(  141.3,    6.4),  // ( 860,  316)
+    gp(  114.4,   -8.8),  // ( 785,  377)
+    gp(  102.7,    4.4),  // ( 753,  324)
+    gp(  107.3,    8.3),  // ( 765,  308)
+    gp(  103.5,   13.8),  // ( 755,  286)
+    gp(  109.1,   20.9),  // ( 770,  257)
+    gp(  104.7,   29.2),  // ( 758,  224)
+    gp(   76.6,   39.6),  // ( 680,  182)
+});
 
-    // ---- Middle East ----
-    m_regions["Middle East"] = makePath({
-        gp(26,  37), gp(36,  37), gp(43,  37), gp(58,  22),
-        gp(57,  15), gp(45,  12), gp(38,  22),
-        gp(32,  30), gp(33,  32), gp(35,  37)
-    });
-
-    // ---- South Asia (Indian subcontinent) ----
-    // Pakistan NW → Nepal/NE India → Bay of Bengal → southern tip → Malabar coast.
-    m_regions["South Asia"] = makePath({
-        gp(62,  38), gp(97,  35), gp(97,  22), gp(92,  22),
-        gp(80,   8), gp(77,   8),               // Southern tip (Kanyakumari)
-        gp(72,  20), gp(65,  22), gp(62,  28)
-    });
-
-    // ---- East Asia ----
-    // Siberia/China border → Korean peninsula → China coast → SE Asia
-    // → Indonesian archipelago → back north.
-    m_regions["East Asia"] = makePath({
-        gp(100, 55), gp(130, 50), gp(130, 43),
-        gp(128, 35), gp(126, 34), gp(127, 37), gp(125, 40),    // Korean peninsula
-        gp(121, 31), gp(115, 22), gp(108, 20), gp(102, 10),
-        gp(103,  3),                                             // Singapore / Malay Peninsula
-        gp(100, -5), gp(110, -8), gp(120, -5),                 // Sumatra → Java → Borneo S
-        gp(118,  5), gp(115, 20), gp(108, 22), gp(100, 22)
-    });
-
-    // ---- Japan ----
-    m_regions["Japan"] = makePath({
-        gp(130, 34), gp(130, 31), gp(131, 32), gp(132, 33),
-        gp(135, 34), gp(138, 35), gp(141, 36),
-        gp(141, 40), gp(143, 44), gp(145, 44),
-        gp(141, 45), gp(141, 42), gp(140, 38), gp(139, 35), gp(136, 35)
-    });
-
-    // ---- Oceania (Australia) ----
-    m_regions["Oceania"] = makePath({
-        gp(114, -22), gp(114, -15), gp(122, -14), gp(130, -12),
-        gp(136, -12), gp(139, -14), gp(143, -11),               // Cape York N tip
-        gp(148, -20), gp(154, -22), gp(153, -28),
-        gp(150, -38), gp(145, -38), gp(137, -35),
-        gp(130, -32), gp(117, -35), gp(114, -28)
-    });
-
-    // ---- New Zealand ---- (North Island simplified)
-    m_regions["New Zealand"] = makePath({
-        gp(173, -34), gp(178, -37), gp(176, -39), gp(175, -41),
-        gp(172, -40), gp(172, -36)
-    });
-
-    // ---- Greenland ----
-    m_regions["Greenland"] = makePath({
-        gp(-73, 76), gp(-50, 83), gp(-25, 83), gp(-18, 77),
-        gp(-22, 70), gp(-45, 60), gp(-65, 63)
-    });
+// ---- Oceania ----  [13 nodes]
+m_regions["Oceania"] = makePath({
+    gp(  119.3,  -37.9),  // ( 798,  495)
+    gp(  120.2,  -23.3),  // ( 801,  436)
+    gp(  132.3,  -14.6),  // ( 835,  401)
+    gp(  114.7,   -9.1),  // ( 786,  378)
+    gp(  141.1,    6.0),  // ( 859,  318)
+    gp(  181.5,   -9.1),  // ( 971,  378)
+    gp(  172.5,  -15.9),  // ( 946,  406)
+    gp(  157.5,  -11.9),  // ( 905,  390)
+    gp(  165.5,  -28.7),  // ( 927,  458)
+    gp(  186.9,  -41.1),  // ( 987,  508)
+    gp(  165.1,  -52.3),  // ( 926,  553)
+    gp(  145.5,  -47.2),  // ( 871,  533)
+    gp(  137.6,  -37.0),  // ( 849,  491)
+});
 
     // Initialize highlight intensity for all regions to 0
     for (const QString& key : m_regions.keys())

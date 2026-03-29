@@ -35,6 +35,8 @@ target_link_libraries(public_wifi
         Qt::Svg
 )
 
+add_subdirectory(tools/polygon-editor)
+
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
