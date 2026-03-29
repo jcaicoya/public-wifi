@@ -3,6 +3,9 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QPen>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QFont>
 #include <QMouseEvent>
 #include <QResizeEvent>
@@ -110,6 +113,23 @@ void MapCanvas::initRegions()
         gp(116,-32), gp(131,-12), gp(153,-27),
         gp(151,-34), gp(145,-38), gp(138,-35),
     };
+    // ---- Mediterranean (Italy + Greece + Balkans) ----
+    // No service maps here by default — assign one in MapView::m_serviceToRegion as needed.
+    m_regions["Mediterranean"] = {
+        gp( 9.0, 44.5),  // N Italy
+        gp(13.5, 45.5),  // NE Italy / Trieste
+        gp(18.5, 40.5),  // Italian heel
+        gp(16.0, 38.0),  // Italian toe
+        gp(12.5, 37.0),  // Sicily W
+        gp(14.5, 37.0),  // Sicily E
+        gp(23.0, 35.0),  // Crete
+        gp(27.0, 36.0),  // Rhodes
+        gp(26.0, 41.0),  // E Greece / N Aegean
+        gp(22.0, 41.0),  // N Greece
+        gp(19.0, 42.0),  // Albania coast
+        gp(14.5, 44.0),  // Croatia / Dalmatia
+    };
+    m_regionNames << "Mediterranean";
 }
 
 void MapCanvas::setActiveRegion(const QString& name)
@@ -419,4 +439,73 @@ QString MapCanvas::generateAllCode() const
         all += "\n";
     }
     return all;
+}
+
+// ── JSON persistence ──────────────────────────────────────────────────────────
+
+bool MapCanvas::saveToJson(const QString& filePath) const
+{
+    QJsonArray orderArr;
+    QJsonObject regionsObj;
+
+    for (const QString& name : m_regionNames) {
+        orderArr.append(name);
+        const auto& pts = m_regions[name];
+        QJsonArray ptsArr;
+        for (const QPointF& vp : pts) {
+            QPointF ll = virtualToLonLat(vp);
+            QJsonArray pair;
+            pair.append(qRound(ll.x() * 10) / 10.0);
+            pair.append(qRound(ll.y() * 10) / 10.0);
+            ptsArr.append(pair);
+        }
+        regionsObj[name] = ptsArr;
+    }
+
+    QJsonObject root;
+    root["region_order"] = orderArr;
+    root["regions"]      = regionsObj;
+
+    QFile f(filePath);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate)) return false;
+    f.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    return true;
+}
+
+bool MapCanvas::loadFromJson(const QString& filePath)
+{
+    QFile f(filePath);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+
+    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) return false;
+
+    QJsonObject root       = doc.object();
+    QJsonArray  orderArr   = root["region_order"].toArray();
+    QJsonObject regionsObj = root["regions"].toObject();
+
+    QStringList newOrder;
+    for (const QJsonValue& v : orderArr) newOrder << v.toString();
+
+    QHash<QString, QVector<QPointF>> newRegions;
+    for (const QString& name : newOrder) {
+        QJsonArray arr = regionsObj[name].toArray();
+        QVector<QPointF> pts;
+        for (const QJsonValue& v : arr) {
+            QJsonArray pt = v.toArray();
+            if (pt.size() == 2)
+                pts << svgCoord(pt[0].toDouble(), pt[1].toDouble());
+        }
+        if (pts.size() >= 3) newRegions[name] = pts;
+    }
+
+    if (newRegions.isEmpty()) return false;
+
+    m_regions     = newRegions;
+    m_regionNames = newOrder;
+
+    if (!m_activeRegion.isEmpty() && !m_regionNames.contains(m_activeRegion))
+        m_activeRegion = m_regionNames.isEmpty() ? QString() : m_regionNames.first();
+
+    return true;
 }

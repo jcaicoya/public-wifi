@@ -23,6 +23,9 @@ public:
     QString generateCode(const QString& regionName) const;
     QString generateAllCode() const;
 
+    bool saveToJson(const QString& filePath) const;
+    bool loadFromJson(const QString& filePath);
+
     // Same projection as MapView — shared formula
     static QPointF svgCoord(qreal lon, qreal lat);
     static QPointF virtualToLonLat(const QPointF& vp);

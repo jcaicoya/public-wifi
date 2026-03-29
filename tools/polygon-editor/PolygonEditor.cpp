@@ -3,6 +3,9 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
 #include <QStatusBar>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -20,11 +23,46 @@ static const QString kCyan   = "#00FFFF";
 static const QString kGreen  = "#00FF44";
 static const QString kDim    = "#445566";
 
+// Returns the canonical save/load path, trying working dir first, then relative to exe.
+QString PolygonEditor::resolveSavePath() const
+{
+    // 1. Working directory (CLion run config: set to project root)
+    QString cwdPath = QDir::currentPath() + "/resources/regions.json";
+    if (QDir(QDir::currentPath() + "/resources").exists())
+        return QDir::cleanPath(cwdPath);
+
+    // 2. Navigate up from exe until we find a resources/ sibling
+    QDir d(QCoreApplication::applicationDirPath());
+    for (int i = 0; i < 5; ++i) {
+        if (d.exists("resources"))
+            return QDir::cleanPath(d.filePath("resources/regions.json"));
+        d.cdUp();
+    }
+
+    // 3. Fallback: next to the executable
+    return QCoreApplication::applicationDirPath() + "/regions.json";
+}
+
 PolygonEditor::PolygonEditor(QWidget* parent) : QMainWindow(parent)
 {
     setStyleSheet(QString("QMainWindow, QWidget { background:%1; color:%2; }")
                   .arg(kDark).arg(kCyan));
     buildUi();
+
+    // Auto-load existing regions.json if present
+    const QString path = resolveSavePath();
+    if (QFile::exists(path)) {
+        if (m_canvas->loadFromJson(path)) {
+            // Rebuild the region list to reflect what was loaded
+            m_regionList->clear();
+            for (const QString& name : m_canvas->regionNames())
+                m_regionList->addItem(name);
+            m_regionList->setCurrentRow(0);
+            m_canvas->setActiveRegion(m_canvas->regionNames().first());
+            statusBar()->showMessage("  Loaded: " + path, 4000);
+        }
+    }
+    m_pathLabel->setText("  Save path: " + resolveSavePath());
 }
 
 void PolygonEditor::buildUi()
@@ -116,6 +154,9 @@ void PolygonEditor::buildUi()
 
     auto* btnRegion = makeBtn("Copy Region");
     auto* btnAll    = makeBtn("Copy All Regions");
+    auto* btnSave   = makeBtn("💾  Save regions.json");
+    btnSave->setStyleSheet(btnSave->styleSheet() +
+        "QPushButton { color:#00FF44; border-color:#00aa33; }");
 
     auto* hint = new QLabel(
         "Left-click empty space → insert node on nearest edge   |   "
@@ -123,11 +164,18 @@ void PolygonEditor::buildUi()
     hint->setStyleSheet(QString(
         "color:%1; font-family:Consolas; font-size:10px;").arg(kDim));
 
+    btnRow->addWidget(btnSave);
     btnRow->addWidget(btnRegion);
     btnRow->addWidget(btnAll);
     btnRow->addStretch();
     btnRow->addWidget(hint);
     root->addLayout(btnRow);
+
+    // Path label
+    m_pathLabel = new QLabel;
+    m_pathLabel->setStyleSheet(QString(
+        "color:%1; font-family:Consolas; font-size:9px; padding:2px 4px;").arg(kDim));
+    root->addWidget(m_pathLabel);
 
     // ── Status bar ────────────────────────────────────────────────────────────
     statusBar()->setStyleSheet(QString(
@@ -146,6 +194,7 @@ void PolygonEditor::buildUi()
 
     connect(btnRegion, &QPushButton::clicked, this, &PolygonEditor::copyRegion);
     connect(btnAll,    &QPushButton::clicked, this, &PolygonEditor::copyAll);
+    connect(btnSave,   &QPushButton::clicked, this, &PolygonEditor::saveRegions);
 
     // Seed the code box with the first region
     onPolygonChanged();
@@ -180,4 +229,17 @@ void PolygonEditor::copyAll()
     m_codeOutput->setPlainText(all);
     QApplication::clipboard()->setText(all);
     statusBar()->showMessage("  All regions copied to clipboard.", 2500);
+}
+
+void PolygonEditor::saveRegions()
+{
+    if (!m_canvas) return;
+    const QString path = resolveSavePath();
+    if (m_canvas->saveToJson(path)) {
+        statusBar()->showMessage("  Saved → " + path, 4000);
+        m_pathLabel->setText("  Saved: " + path);
+    } else {
+        statusBar()->showMessage("  ERROR: could not write to " + path, 5000);
+        m_pathLabel->setText("  ERROR saving to: " + path);
+    }
 }

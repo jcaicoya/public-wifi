@@ -8,6 +8,11 @@
 #include <QFile>
 #include <QResizeEvent>
 #include <QSvgRenderer>
+#include <QCoreApplication>
+#include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 MapView::MapView(QWidget* parent)
     : QWidget(parent)
@@ -83,6 +88,62 @@ MapView::MapView(QWidget* parent)
         m_svgRenderer = new QSvgRenderer(svgData, this);
         // m_bgPixmap is built in resizeEvent / rebuildBackground() once the widget has a size.
     }
+
+    // Override hardcoded polygons with saved editor data if regions.json exists.
+    tryLoadRegionsFromFile();
+}
+
+void MapView::tryLoadRegionsFromFile()
+{
+    // Candidate paths, tried in order:
+    //  1. Working directory / resources / regions.json  (CLion: set working dir to project root)
+    //  2. Relative to executable (for deployed or differently-configured builds)
+    QStringList candidates = {
+        QDir::currentPath() + "/resources/regions.json",
+        QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../resources/regions.json"),
+        QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../../resources/regions.json"),
+        QCoreApplication::applicationDirPath() + "/regions.json",
+    };
+
+    QString path;
+    for (const QString& c : candidates) {
+        if (QFile::exists(c)) { path = c; break; }
+    }
+    if (path.isEmpty()) return;
+
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return;
+
+    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) return;
+
+    QJsonObject regionsObj = doc.object()["regions"].toObject();
+    if (regionsObj.isEmpty()) return;
+
+    auto makePath = [](const QVector<QPointF>& pts) -> QPainterPath {
+        QPainterPath p;
+        if (pts.isEmpty()) return p;
+        p.moveTo(pts[0]);
+        for (int i = 1; i < pts.size(); ++i) p.lineTo(pts[i]);
+        p.closeSubpath();
+        return p;
+    };
+
+    for (const QString& name : regionsObj.keys()) {
+        QJsonArray arr = regionsObj[name].toArray();
+        QVector<QPointF> pts;
+        for (const QJsonValue& v : arr) {
+            QJsonArray pt = v.toArray();
+            if (pt.size() == 2)
+                pts << svgCoord(pt[0].toDouble(), pt[1].toDouble());
+        }
+        if (pts.size() >= 3) {
+            m_regions[name]          = makePath(pts);
+            m_regionHighlights[name] = 0.0;
+        }
+    }
+
+    qDebug() << "MapView: loaded regions from" << path;
 }
 
 QPointF MapView::svgCoord(qreal lon, qreal lat)
@@ -298,6 +359,23 @@ m_regions["Oceania"] = makePath({
     gp(  145.5,  -47.2),  // ( 871,  533)
     gp(  137.6,  -37.0),  // ( 849,  491)
 });
+
+    // ---- Mediterranean (Italy + Greece + Balkans) ----
+    // Assign a service in m_serviceToRegion to activate this region.
+    m_regions["Mediterranean"] = makePath({
+        gp(  9.0,  44.5),  // N Italy
+        gp( 13.5,  45.5),  // NE Italy / Trieste
+        gp( 18.5,  40.5),  // Italian heel
+        gp( 16.0,  38.0),  // Italian toe
+        gp( 12.5,  37.0),  // Sicily W
+        gp( 14.5,  37.0),  // Sicily E
+        gp( 23.0,  35.0),  // Crete
+        gp( 27.0,  36.0),  // Rhodes
+        gp( 26.0,  41.0),  // E Greece / N Aegean
+        gp( 22.0,  41.0),  // N Greece
+        gp( 19.0,  42.0),  // Albania coast
+        gp( 14.5,  44.0),  // Croatia / Dalmatia
+    });
 
     // Initialize highlight intensity for all regions to 0
     for (const QString& key : m_regions.keys())
