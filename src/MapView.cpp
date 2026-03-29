@@ -440,26 +440,42 @@ void MapView::rebuildBackground()
 {
     if (!m_svgRenderer || width() == 0 || height() == 0) return;
 
+    // Calculate Aspect Fit rect for 1000x600 virtual space
+    qreal widgetRatio = qreal(width()) / height();
+    qreal mapRatio    = 1000.0 / 600.0;
+    qreal w, h;
+
+    if (widgetRatio > mapRatio) {
+        h = height();
+        w = h * mapRatio;
+    } else {
+        w = width();
+        h = w / mapRatio;
+    }
+    m_contentRect = QRectF((width() - w) / 2.0, (height() - h) / 2.0, w, h);
+
     // Render SVG + grid into a single pixmap at the real widget resolution.
-    // This is called once on first show and again on every resize.
-    // paintEvent can then blit it at 1:1 — no per-frame scaling, no dotted-line recalc.
     m_bgPixmap = QPixmap(width(), height());
     m_bgPixmap.fill(QColor("#090C10"));
 
     QPainter p(&m_bgPixmap);
     p.setRenderHint(QPainter::Antialiasing);
 
-    // SVG at full widget resolution
-    m_svgRenderer->render(&p, QRectF(0, 0, width(), height()));
+    // SVG at centered content resolution
+    m_svgRenderer->render(&p, m_contentRect);
 
-    // Grid in virtual 1000×600 space, scaled to match
-    p.scale(width() / 1000.0, height() / 600.0);
+    // Grid in virtual 1000×600 space, scaled and translated to match m_contentRect
+    p.save();
+    p.translate(m_contentRect.topLeft());
+    p.scale(m_contentRect.width() / 1000.0, m_contentRect.height() / 600.0);
+    
     QPen gridPen(QColor(30, 40, 60, 55));
     gridPen.setWidthF(0.8);
     gridPen.setStyle(Qt::DotLine);
     p.setPen(gridPen);
     for (int x = 0; x <= 1000; x += 50) p.drawLine(x, 0, x, 600);
     for (int y = 0; y <= 600; y += 50) p.drawLine(0, y, 1000, y);
+    p.restore();
 }
 
 void MapView::resizeEvent(QResizeEvent* event)
@@ -474,17 +490,19 @@ void MapView::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // --- Layer 1+2: background (SVG + grid) — single 1:1 blit, zero scaling cost ---
-    // Never call rebuildBackground() from paintEvent; the debounce timer owns it.
-    if (!m_bgPixmap.isNull())
+    // --- Layer 1+2: background (SVG + grid) ---
+    if (!m_bgPixmap.isNull() && m_bgPixmap.size() == size())
         painter.drawPixmap(0, 0, m_bgPixmap);
     else
         painter.fillRect(rect(), QColor("#090C10"));
 
     painter.save();
-    const qreal scaleX = width() / 1000.0;
-    const qreal scaleY = height() / 600.0;
-    painter.scale(scaleX, scaleY);
+    // Translate and scale to match the centered content rect
+    painter.translate(m_contentRect.topLeft());
+    painter.scale(m_contentRect.width() / 1000.0, m_contentRect.height() / 600.0);
+    
+    // Clip to virtual space so elements don't draw in letterbox areas
+    painter.setClipRect(0, 0, 1000, 600);
 
     // --- Layer 3: region highlight overlays ---
     // Idle regions are fully transparent — the SVG handles the visual.

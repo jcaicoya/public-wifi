@@ -188,13 +188,15 @@ void MapCanvas::deleteRegion(const QString& name)
 
 QPointF MapCanvas::toVirtual(const QPointF& sp) const
 {
-    if (width() == 0 || height() == 0) return {};
-    return { sp.x() * 1000.0 / width(), sp.y() * 600.0 / height() };
+    if (m_contentRect.width() == 0 || m_contentRect.height() == 0) return {};
+    return { (sp.x() - m_contentRect.left()) * 1000.0 / m_contentRect.width(),
+             (sp.y() - m_contentRect.top())  * 600.0  / m_contentRect.height() };
 }
 
 QPointF MapCanvas::toScreen(const QPointF& vp) const
 {
-    return { vp.x() * width() / 1000.0, vp.y() * height() / 600.0 };
+    return { m_contentRect.left() + vp.x() * m_contentRect.width()  / 1000.0,
+             m_contentRect.top()  + vp.y() * m_contentRect.height() / 600.0 };
 }
 
 int MapCanvas::findNearestNode(const QVector<QPointF>& poly,
@@ -348,11 +350,41 @@ void MapCanvas::leaveEvent(QEvent*)
 void MapCanvas::rebuildBackground()
 {
     if (!m_svgRenderer || width() == 0 || height() == 0) return;
+
+    // Calculate Aspect Fit rect for 1000x600 virtual space
+    qreal widgetRatio = qreal(width()) / height();
+    qreal mapRatio    = 1000.0 / 600.0;
+    qreal w, h;
+
+    if (widgetRatio > mapRatio) {
+        h = height();
+        w = h * mapRatio;
+    } else {
+        w = width();
+        h = w / mapRatio;
+    }
+    m_contentRect = QRectF((width() - w) / 2.0, (height() - h) / 2.0, w, h);
+
     m_bgPixmap = QPixmap(size());
     m_bgPixmap.fill(QColor("#090C10"));
     QPainter p(&m_bgPixmap);
     p.setRenderHint(QPainter::Antialiasing);
-    m_svgRenderer->render(&p, QRectF(0, 0, width(), height()));
+
+    // SVG at centered content resolution
+    m_svgRenderer->render(&p, m_contentRect);
+
+    // Grid (draw it relative to m_contentRect)
+    p.setPen(QPen(QColor(30, 40, 60, 50), 0.5));
+    for (int x = 0; x <= 1000; x += 50) {
+        QPointF a = toScreen({qreal(x), 0});
+        QPointF b = toScreen({qreal(x), 600});
+        p.drawLine(a, b);
+    }
+    for (int y = 0; y <= 600; y += 50) {
+        QPointF a = toScreen({0, qreal(y)});
+        QPointF b = toScreen({1000, qreal(y)});
+        p.drawLine(a, b);
+    }
 }
 
 void MapCanvas::resizeEvent(QResizeEvent* ev)
@@ -369,11 +401,14 @@ void MapCanvas::paintEvent(QPaintEvent*)
     p.setRenderHint(QPainter::Antialiasing);
 
     // Background
-    if (m_bgPixmap.isNull()) rebuildBackground();
+    if (m_bgPixmap.isNull() || m_bgPixmap.size() != size()) rebuildBackground();
     if (!m_bgPixmap.isNull())
         p.drawPixmap(0, 0, m_bgPixmap);
     else
         p.fillRect(rect(), QColor("#090C10"));
+
+    // Clip to content rect to hide nodes outside the map
+    p.setClipRect(m_contentRect);
 
     auto buildPath = [&](const QVector<QPointF>& pts) {
         QPainterPath path;

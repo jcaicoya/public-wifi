@@ -77,6 +77,7 @@ private:
 
     QSvgRenderer* m_svgRenderer = nullptr;
     QPixmap       m_bgPixmap;
+    QRectF        m_contentRect; // Center-aligned 1000x600 box in screen space
 
     static constexpr qreal NODE_R = 6.0;   // screen pixels, node display radius
     static constexpr qreal HIT_R  = 11.0;  // screen pixels, hit-test radius

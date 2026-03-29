@@ -50,6 +50,7 @@ private:
     QTimer* m_animationTimer;
     int m_pulsePhase = 0;
     QPointF m_phonePos;
+    QRectF  m_contentRect; // Center-aligned 1000x600 virtual box in screen space
 
     QSvgRenderer* m_svgRenderer = nullptr;
     QPixmap m_bgPixmap;         // SVG + grid combined, rebuilt on stable resize
