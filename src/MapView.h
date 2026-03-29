@@ -40,6 +40,7 @@ private slots:
 private:
     void buildMapRegions();
     void tryLoadRegionsFromFile();
+    void tryLoadServicesFromFile();
     static QPointF svgCoord(qreal lon, qreal lat);
 
     QHash<QString, QPainterPath> m_regions;

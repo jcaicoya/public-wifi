@@ -36,6 +36,7 @@ target_link_libraries(public_wifi
 )
 
 add_subdirectory(tools/polygon-editor)
+add_subdirectory(tools/service-mapper)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)

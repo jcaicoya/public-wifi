@@ -81,6 +81,8 @@ MapView::MapView(QWidget* parent)
         QByteArray svgData = svgFile.readAll();
         svgData.replace("fill:#e0e0e0", "fill:none");
         svgData.replace("fill: #e0e0e0", "fill:none");
+        svgData.replace("fill:#ffffff", "fill:none");
+        svgData.replace("fill: #ffffff", "fill:none");
         svgData.replace("stroke:#ffffff", "stroke:#1a8cbf");
         svgData.replace("stroke:#000000", "stroke:#1a8cbf");
         svgData.replace("stroke-width:0.5", "stroke-width:3.0");
@@ -91,6 +93,41 @@ MapView::MapView(QWidget* parent)
 
     // Override hardcoded polygons with saved editor data if regions.json exists.
     tryLoadRegionsFromFile();
+
+    // Load dynamic service mapping from services.json
+    tryLoadServicesFromFile();
+}
+
+void MapView::tryLoadServicesFromFile()
+{
+    QStringList candidates = {
+        QDir::currentPath() + "/resources/services.json",
+        QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../resources/services.json"),
+        QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../../resources/services.json"),
+        QCoreApplication::applicationDirPath() + "/services.json",
+    };
+
+    QString path;
+    for (const QString& c : candidates) {
+        if (QFile::exists(c)) { path = c; break; }
+    }
+    if (path.isEmpty()) return;
+
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return;
+
+    QJsonDocument doc = QJsonDocument::fromJson(f.readAll());
+    if (!doc.isObject()) return;
+
+    QJsonObject obj = doc.object();
+    if (obj.isEmpty()) return;
+
+    // Clear and reload (replaces hardcoded ones)
+    m_serviceToRegion.clear();
+    for (const QString& svc : obj.keys()) {
+        m_serviceToRegion[svc.toUpper()] = obj[svc].toString();
+    }
+    qDebug() << "MapView: loaded" << m_serviceToRegion.size() << "service mappings from" << path;
 }
 
 void MapView::tryLoadRegionsFromFile()
@@ -384,11 +421,17 @@ m_regions["Oceania"] = makePath({
 
 void MapView::addConnection(const QString& eventType)
 {
+    QString svc = eventType.toUpper();
+    if (!m_serviceToRegion.contains(svc)) {
+        // If not in mapping, we ignore it as requested.
+        return;
+    }
+
     MapConnection conn;
-    conn.service = eventType.isEmpty() ? "UNKNOWN" : eventType;
+    conn.service = svc;
     
-    // Look up the target region using our dictionary. Default to North America if unknown.
-    conn.targetRegion = m_serviceToRegion.value(conn.service, "North America"); 
+    // Look up the target region using our dynamic dictionary.
+    conn.targetRegion = m_serviceToRegion.value(svc); 
     
     conn.start = m_phonePos;
     

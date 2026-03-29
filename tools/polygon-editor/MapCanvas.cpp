@@ -44,6 +44,8 @@ MapCanvas::MapCanvas(QWidget* parent) : QWidget(parent)
         // Same restyling as the main app — borders-only, cyan-blue
         svg.replace("fill:#e0e0e0",    "fill:none");
         svg.replace("fill: #e0e0e0",   "fill:none");
+        svg.replace("fill:#ffffff",    "fill:none");
+        svg.replace("fill: #ffffff",   "fill:none");
         svg.replace("stroke:#ffffff",  "stroke:#1a8cbf");
         svg.replace("stroke:#000000",  "stroke:#1a8cbf");
         svg.replace("stroke-width:0.5","stroke-width:3.0");
@@ -421,11 +423,18 @@ void MapCanvas::paintEvent(QPaintEvent*)
     };
 
     // ── Inactive regions (dim teal) ───────────────────────────────────────────
+    QFont inactiveFont("Consolas", 8);
+    p.setFont(inactiveFont);
     for (const QString& name : m_regionNames) {
         if (name == m_activeRegion) continue;
-        p.setBrush(QColor(0, 160, 160, 22));
-        p.setPen(QPen(QColor(0, 160, 160, 90), 1.2));
-        p.drawPath(buildPath(m_regions[name]));
+        QPainterPath path = buildPath(m_regions[name]);
+        p.setBrush(QColor(0, 180, 200, 40));
+        p.setPen(QPen(QColor(0, 180, 200, 140), 1.5));
+        p.drawPath(path);
+
+        // Faint name label for reference
+        p.setPen(QColor(0, 180, 200, 180));
+        p.drawText(path.boundingRect(), Qt::AlignCenter, name);
     }
 
     // ── Active region ─────────────────────────────────────────────────────────
