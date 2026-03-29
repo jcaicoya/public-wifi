@@ -2,10 +2,13 @@
 #include "MapCanvas.h"
 
 #include <QApplication>
+#include <QAction>
 #include <QClipboard>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
+#include <QInputDialog>
+#include <QMenu>
 #include <QStatusBar>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -84,6 +87,7 @@ void PolygonEditor::buildUi()
     // Region list
     m_regionList = new QListWidget;
     m_regionList->setFixedWidth(170);
+    m_regionList->setContextMenuPolicy(Qt::CustomContextMenu);
     m_regionList->setStyleSheet(
         QString("QListWidget {"
                 "  background:%1; color:%2;"
@@ -154,9 +158,12 @@ void PolygonEditor::buildUi()
 
     auto* btnRegion = makeBtn("Copy Region");
     auto* btnAll    = makeBtn("Copy All Regions");
+    auto* btnAdd    = makeBtn("Add Region");
     auto* btnSave   = makeBtn("💾  Save regions.json");
     btnSave->setStyleSheet(btnSave->styleSheet() +
         "QPushButton { color:#00FF44; border-color:#00aa33; }");
+    btnAdd->setStyleSheet(btnAdd->styleSheet() +
+        "QPushButton { color:#00FFFF; border-color:#008888; }");
 
     auto* hint = new QLabel(
         "Left-click empty space → insert node on nearest edge   |   "
@@ -165,6 +172,7 @@ void PolygonEditor::buildUi()
         "color:%1; font-family:Consolas; font-size:10px;").arg(kDim));
 
     btnRow->addWidget(btnSave);
+    btnRow->addWidget(btnAdd);
     btnRow->addWidget(btnRegion);
     btnRow->addWidget(btnAll);
     btnRow->addStretch();
@@ -195,6 +203,10 @@ void PolygonEditor::buildUi()
     connect(btnRegion, &QPushButton::clicked, this, &PolygonEditor::copyRegion);
     connect(btnAll,    &QPushButton::clicked, this, &PolygonEditor::copyAll);
     connect(btnSave,   &QPushButton::clicked, this, &PolygonEditor::saveRegions);
+    connect(btnAdd,    &QPushButton::clicked, this, &PolygonEditor::addRegionDialog);
+
+    connect(m_regionList, &QListWidget::customContextMenuRequested,
+            this, &PolygonEditor::showListContextMenu);
 
     // Seed the code box with the first region
     onPolygonChanged();
@@ -242,4 +254,82 @@ void PolygonEditor::saveRegions()
         statusBar()->showMessage("  ERROR: could not write to " + path, 5000);
         m_pathLabel->setText("  ERROR saving to: " + path);
     }
+}
+
+void PolygonEditor::addRegionDialog()
+{
+    bool ok;
+    QString name = QInputDialog::getText(this, "Add Region", "Enter name for new region:",
+                                         QLineEdit::Normal, "", &ok);
+    if (ok && !name.trimmed().isEmpty()) {
+        QString trimmed = name.trimmed();
+        if (m_canvas->regionNames().contains(trimmed)) {
+            statusBar()->showMessage("  ERROR: Region name already exists!", 4000);
+            return;
+        }
+        m_canvas->addRegion(trimmed);
+        m_regionList->addItem(trimmed);
+        m_regionList->setCurrentRow(m_regionList->count() - 1);
+        statusBar()->showMessage("  Region added: " + trimmed, 3000);
+    }
+}
+
+void PolygonEditor::renameRegionDialog(const QString& oldName)
+{
+    bool ok;
+    QString name = QInputDialog::getText(this, "Rename Region", "Enter new name for '" + oldName + "':",
+                                         QLineEdit::Normal, oldName, &ok);
+    if (ok && !name.trimmed().isEmpty() && name != oldName) {
+        QString trimmed = name.trimmed();
+        if (m_canvas->regionNames().contains(trimmed)) {
+            statusBar()->showMessage("  ERROR: Region name already exists!", 4000);
+            return;
+        }
+        m_canvas->renameRegion(oldName, trimmed);
+        // Update list item
+        for (int i = 0; i < m_regionList->count(); ++i) {
+            if (m_regionList->item(i)->text() == oldName) {
+                m_regionList->item(i)->setText(trimmed);
+                break;
+            }
+        }
+        statusBar()->showMessage("  Renamed: " + oldName + " -> " + trimmed, 3000);
+    }
+}
+
+void PolygonEditor::deleteRegion(const QString& name)
+{
+    if (m_canvas->regionNames().count() <= 1) {
+        statusBar()->showMessage("  ERROR: Cannot delete the last region!", 4000);
+        return;
+    }
+
+    m_canvas->deleteRegion(name);
+    // Remove from list
+    for (int i = 0; i < m_regionList->count(); ++i) {
+        if (m_regionList->item(i)->text() == name) {
+            delete m_regionList->takeItem(i);
+            break;
+        }
+    }
+    statusBar()->showMessage("  Region deleted: " + name, 3000);
+}
+
+void PolygonEditor::showListContextMenu(const QPoint& pos)
+{
+    QListWidgetItem* item = m_regionList->itemAt(pos);
+    if (!item) return;
+
+    QString name = item->text();
+    QMenu menu(this);
+    menu.setStyleSheet("QMenu { background:#0d1117; color:#00FFFF; border:1px solid #1a4a5a; } "
+                       "QMenu::item:selected { background:#1a4a5a; }");
+
+    QAction* actRename = menu.addAction("Rename Region...");
+    QAction* actDelete = menu.addAction("Delete Region");
+
+    connect(actRename, &QAction::triggered, this, [this, name](){ renameRegionDialog(name); });
+    connect(actDelete, &QAction::triggered, this, [this, name](){ deleteRegion(name); });
+
+    menu.exec(m_regionList->mapToGlobal(pos));
 }

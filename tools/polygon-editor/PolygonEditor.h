@@ -20,6 +20,10 @@ private slots:
     void copyRegion();
     void copyAll();
     void saveRegions();
+    void addRegionDialog();
+    void renameRegionDialog(const QString& oldName);
+    void deleteRegion(const QString& name);
+    void showListContextMenu(const QPoint& pos);
 
 private:
     void buildUi();

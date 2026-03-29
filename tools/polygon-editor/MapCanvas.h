@@ -20,6 +20,10 @@ public:
     void setActiveRegion(const QString& name);
     const QString& activeRegion() const { return m_activeRegion; }
 
+    void addRegion(const QString& name);
+    void renameRegion(const QString& oldName, const QString& newName);
+    void deleteRegion(const QString& name);
+
     QString generateCode(const QString& regionName) const;
     QString generateAllCode() const;
 

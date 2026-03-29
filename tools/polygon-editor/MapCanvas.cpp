@@ -141,6 +141,49 @@ void MapCanvas::setActiveRegion(const QString& name)
     update();
 }
 
+void MapCanvas::addRegion(const QString& name)
+{
+    if (name.isEmpty() || m_regions.contains(name)) return;
+
+    // Default square in the bottom-left area (virtual 0-1000 / 0-600)
+    m_regions[name] = {
+        {50,  450}, {150, 450},
+        {150, 550}, {50,  550}
+    };
+    m_regionNames << name;
+    setActiveRegion(name);
+    emit polygonChanged();
+}
+
+void MapCanvas::renameRegion(const QString& oldName, const QString& newName)
+{
+    if (oldName.isEmpty() || newName.isEmpty() || !m_regions.contains(oldName) || m_regions.contains(newName))
+        return;
+
+    m_regions[newName] = m_regions.take(oldName);
+    int idx = m_regionNames.indexOf(oldName);
+    if (idx != -1) m_regionNames[idx] = newName;
+
+    if (m_activeRegion == oldName) m_activeRegion = newName;
+    update();
+    emit polygonChanged();
+}
+
+void MapCanvas::deleteRegion(const QString& name)
+{
+    if (name.isEmpty() || !m_regions.contains(name)) return;
+
+    m_regions.remove(name);
+    m_regionNames.removeAll(name);
+
+    if (m_activeRegion == name) {
+        if (!m_regionNames.isEmpty()) setActiveRegion(m_regionNames.first());
+        else m_activeRegion.clear();
+    }
+    update();
+    emit polygonChanged();
+}
+
 // ── Coordinate helpers ────────────────────────────────────────────────────────
 
 QPointF MapCanvas::toVirtual(const QPointF& sp) const
