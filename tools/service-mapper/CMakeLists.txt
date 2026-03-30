@@ -25,6 +25,15 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
         set(DEBUG_SUFFIX "d")
     endif()
     set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
+    if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
+        add_custom_command(TARGET service_mapper POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+            "$<TARGET_FILE_DIR:service_mapper>/plugins/platforms/")
+        add_custom_command(TARGET service_mapper POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
+            "$<TARGET_FILE_DIR:service_mapper>/plugins/platforms/")
+    endif()
     foreach(QT_LIB Core Gui Widgets)
         add_custom_command(TARGET service_mapper POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
