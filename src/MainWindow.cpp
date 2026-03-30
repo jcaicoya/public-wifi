@@ -807,6 +807,15 @@ void MainWindow::updateEncryptionAnimation()
         m_hackerTerminalE->append("> Mathematical limits reached.");
         m_hackerTerminalE->append("> Aborting operation.\n");
         m_lockedPlaceholderE->show();
+
+        // In act sequence mode the timer was paused when we entered this screen.
+        // Give the audience 5 seconds to read the result, then resume the cycle.
+        if (m_config.actSequence && m_actSequenceTimer) {
+            QTimer::singleShot(5000, this, [this]() {
+                if (m_actSequenceTimer)
+                    m_actSequenceTimer->start(7000);
+            });
+        }
     }
     
     m_hackerTerminalE->verticalScrollBar()->setValue(m_hackerTerminalE->verticalScrollBar()->maximum());
@@ -939,6 +948,11 @@ void MainWindow::goTo(PageId pageId)
 {
     m_stack->setCurrentIndex(static_cast<int>(pageId));
     statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
+
+    if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
+        if (m_actSequenceTimer) m_actSequenceTimer->stop(); // Paused — animation will restart it
+        startEncryptionDemo();
+    }
 }
 
 QString MainWindow::getLocalIpAddress() const
