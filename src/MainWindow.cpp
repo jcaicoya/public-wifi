@@ -49,8 +49,8 @@ QString pageName(MainWindow::PageId pageId)
 }
 }
 
-MainWindow::MainWindow(bool demoMode, QWidget* parent)
-    : QMainWindow(parent), m_isDemoMode(demoMode)
+MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
+    : QMainWindow(parent), m_config(config)
 {
     buildUi();
     wireNavigation();
@@ -101,19 +101,23 @@ MainWindow::MainWindow(bool demoMode, QWidget* parent)
         qWarning() << "Device server failed to start";
     }
 
-    if (m_isDemoMode) {
-        if (m_console1) m_console1->setPlainText("Running in DEMO MODE...\nNo router connection required.");
-        if (m_console2) m_console2->setPlainText("Running in DEMO MODE...\nWaiting for simulated events.");
-        if (m_console3) m_console3->setPlainText("Running in DEMO MODE...\nLogs disabled.");
-        if (m_console4) m_console4->setPlainText("Running in DEMO MODE...\nConnections hidden.");
+    if (m_config.mode == ShowConfig::Mode::Demo) {
+        if (m_console1) m_console1->setPlainText("[ DEMO MODE ]\nNo router connection required.");
+        if (m_console2) m_console2->setPlainText("[ DEMO MODE ]\nWaiting for simulated events.");
+        if (m_console3) m_console3->setPlainText("[ DEMO MODE ]\nLogs disabled.");
+        if (m_console4) m_console4->setPlainText("[ DEMO MODE ]\nConnections hidden.");
         startDemoMode();
-        if (m_demoBtnC) {
-            m_demoBtnC->setText("■  Stop Demo");
-            m_demoBtnC->setStyleSheet(
-                "QPushButton { background:#2b0d0d; color:#FF3333; border:1px solid #FF3333; "
-                "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
-                "QPushButton:hover { background:#401a1a; }"
-            );
+        if (m_config.actSequence) {
+            m_actSequenceTimer = new QTimer(this);
+            connect(m_actSequenceTimer, &QTimer::timeout, this, [this]() {
+                constexpr int kScreenCount = 5;
+                m_actSequenceIndex = (m_actSequenceIndex + 1) % kScreenCount;
+                const auto page = static_cast<PageId>(m_actSequenceIndex);
+                if (page == PageId::Devices && m_devicesListB && m_devicesListB->count() > 0)
+                    m_devicesListB->setCurrentRow(0);
+                goTo(page);
+            });
+            m_actSequenceTimer->start(7000); // 7 s per screen
         }
     } else {
         m_routerRetryTimer = new QTimer(this);
@@ -471,42 +475,10 @@ void MainWindow::buildPageC()
     auto* eventsTitle = new QLabel("Selected Device Events", eventsPane);
     eventsTitle->setFont(titleFont);
 
-    m_demoBtnC = new QPushButton("▶  Demo Mode", eventsPane);
-    m_demoBtnC->setStyleSheet(
-        "QPushButton { background:#0d2b10; color:#00FF44; border:1px solid #00FF44; "
-        "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
-        "QPushButton:hover { background:#1a4020; }"
-    );
-    connect(m_demoBtnC, &QPushButton::clicked, this, [this]() {
-        if (m_demoTimer) {
-            m_demoTimer->stop();
-            m_demoTimer->deleteLater();
-            m_demoTimer = nullptr;
-            m_demoBtnC->setText("▶  Demo Mode");
-            m_demoBtnC->setStyleSheet(
-                "QPushButton { background:#0d2b10; color:#00FF44; border:1px solid #00FF44; "
-                "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
-                "QPushButton:hover { background:#1a4020; }"
-            );
-            statusBar()->showMessage("Demo mode stopped.", 2000);
-        } else {
-            startDemoMode();
-            if (m_demoTimer) {
-                m_demoBtnC->setText("■  Stop Demo");
-                m_demoBtnC->setStyleSheet(
-                    "QPushButton { background:#2b0d0d; color:#FF3333; border:1px solid #FF3333; "
-                    "padding:6px 14px; font-family:Consolas; font-size:11px; font-weight:bold; }"
-                    "QPushButton:hover { background:#401a1a; }"
-                );
-            }
-        }
-    });
-
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
     m_filteredTrafficViewC->setReadOnly(true);
 
     eventsLayout->addWidget(eventsTitle);
-    eventsLayout->addWidget(m_demoBtnC);
     eventsLayout->addWidget(m_filteredTrafficViewC, 1);
 
     splitter->addWidget(mapPane);
@@ -629,7 +601,7 @@ void MainWindow::startEncryptionDemo()
     m_hackerTerminalE->clear();
     m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION\n");
 
-    if (m_isDemoMode) {
+    if (m_config.mode == ShowConfig::Mode::Demo) {
         m_hackerTerminalE->append("> Intercepted packet from target device to whatsapp.net");
         m_hackerTerminalE->append("> Extracting raw payload...\n");
         m_hackerTerminalE->append(generateHexPayload(15));
@@ -1014,6 +986,7 @@ void MainWindow::onDemoTimerTick()
 
     m_demoIndex++;
 }
+
 
 void MainWindow::tryConnectRouter()
 {

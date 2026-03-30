@@ -4,6 +4,7 @@
 #include <QHash>
 #include <QJsonArray>
 #include <QDateTime>
+#include "ShowConfig.h"
 
 class QStackedWidget;
 class QListWidget;
@@ -22,7 +23,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(bool demoMode = false, QWidget* parent = nullptr);
+    explicit MainWindow(const ShowConfig& config, QWidget* parent = nullptr);
     ~MainWindow() override;
 
     enum class PageId
@@ -66,8 +67,10 @@ private slots:
     void tryConnectRouter();
 
 private:
-    bool m_isDemoMode = false;
-    QTimer* m_routerRetryTimer = nullptr;
+    ShowConfig m_config;
+    QTimer* m_routerRetryTimer  = nullptr;
+    QTimer* m_actSequenceTimer  = nullptr;
+    int     m_actSequenceIndex  = 0;
 
     QStackedWidget* m_stack = nullptr;
 
@@ -98,7 +101,6 @@ private:
     // C
     MapView* m_mapViewC = nullptr;
     QTextEdit* m_filteredTrafficViewC = nullptr;
-    QPushButton* m_demoBtnC = nullptr;
 
     // D
     QTextEdit* m_statsPlaceholderD = nullptr;

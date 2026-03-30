@@ -1,5 +1,4 @@
 #include <QApplication>
-#include <QCommandLineParser>
 #include <QMessageBox>
 #include <QFile>
 #include <QDir>
@@ -7,6 +6,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonParseError>
+#include "InitScreen.h"
 #include "MainWindow.h"
 
 // Returns an error description, or an empty string if everything is valid.
@@ -99,16 +99,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription("Public Wi-Fi Cybershow");
-    parser.addHelpOption();
-    
-    QCommandLineOption demoOption(QStringList() << "d" << "demo", "Run in demo mode (no router needed).");
-    parser.addOption(demoOption);
-    
-    parser.process(app);
-    bool isDemoMode = parser.isSet(demoOption);
-
     app.setStyle("Fusion");
     app.setStyleSheet(
         "QMainWindow { background-color: #090C10; color: #FFFFFF; }"
@@ -124,7 +114,11 @@ int main(int argc, char *argv[])
         "QLabel { color: #FFFFFF; }"
     );
 
-    MainWindow window(isDemoMode);
+    InitScreen initScreen;
+    if (initScreen.exec() != QDialog::Accepted)
+        return 0;
+
+    MainWindow window(initScreen.config());
     window.showMaximized();
 
     return app.exec();

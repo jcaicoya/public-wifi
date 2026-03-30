@@ -17,6 +17,9 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 add_executable(public_wifi src/main.cpp
+        src/ShowConfig.h
+        src/InitScreen.h
+        src/InitScreen.cpp
         src/TcpJsonLineServer.cpp
         src/TcpJsonLineServer.h
         src/MainWindow.cpp
