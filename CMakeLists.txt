@@ -22,6 +22,8 @@ add_executable(public_wifi src/main.cpp
         src/InitScreen.cpp
         src/TcpJsonLineServer.cpp
         src/TcpJsonLineServer.h
+        src/WifiPortalServer.h
+        src/WifiPortalServer.cpp
         src/MainWindow.cpp
         src/MainWindow.h
         src/ScreenPage.cpp

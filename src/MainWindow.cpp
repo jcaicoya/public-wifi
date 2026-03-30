@@ -3,6 +3,7 @@
 #include "ScreenPage.h"
 #include "TcpJsonLineServer.h"
 #include "MapView.h"
+#include "WifiPortalServer.h"
 
 #include <QFile>
 #include <QFrame>
@@ -144,6 +145,14 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
 
     if (!m_deviceServer->start()) {
         qWarning() << "Device server failed to start";
+    }
+
+    m_portalServer = new WifiPortalServer(8080, this);
+    connect(m_portalServer, &WifiPortalServer::credentialCaptured,
+            this, &MainWindow::processCredentialEvent);
+    if (!m_portalServer->start()) {
+        qWarning() << "WiFi portal server failed to start on port 8080";
+        statusBar()->showMessage("WARNING: Portal server could not start on port 8080", 5000);
     }
 
     if (m_config.mode == ShowConfig::Mode::Demo) {
@@ -379,6 +388,31 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     }
 }
 
+void MainWindow::processCredentialEvent(const QString& name, const QString& email)
+{
+    qDebug() << "[CREDENTIAL]" << name << email;
+
+    if (!m_credentialBannerB) return;
+
+    m_credentialBannerB->setText(
+        QString("\u26A0  CREDENTIAL INTERCEPTED  \u26A0\n\n"
+                "NAME :   %1\n"
+                "EMAIL:   %2").arg(name, email));
+    m_credentialBannerB->show();
+
+    // Auto-navigate to Screen B so the audience sees the reveal
+    goTo(PageId::Devices);
+
+    // Also append a note to the raw traffic view
+    if (m_rawTrafficViewB) {
+        m_rawTrafficViewB->append(
+            QString("<font color='#FF3333'>[PORTAL] CREDENTIAL CAPTURED — %1 / %2</font>")
+            .arg(name, email));
+        m_rawTrafficViewB->verticalScrollBar()->setValue(
+            m_rawTrafficViewB->verticalScrollBar()->maximum());
+    }
+}
+
 void MainWindow::buildUi()
 {
     setWindowTitle("Public Wi-Fi - Cybershow");
@@ -495,6 +529,28 @@ void MainWindow::buildPageB()
 {
     m_pageB = new ScreenPage("", "Devices + Raw Traffic", this);
 
+    // --- Portal URL strip (always visible) ---
+    const QString localIp = getLocalIpAddress();
+    m_portalUrlLabelB = new QLabel(
+        QString("  FREE WiFi Portal  \u2192  http://%1:8080  "
+                "  (show this URL / QR to the volunteer)").arg(localIp),
+        m_pageB);
+    m_portalUrlLabelB->setStyleSheet(
+        "background: #0d2235; color: #00FFFF; font-family: Consolas, monospace; "
+        "font-size: 14px; padding: 8px 16px; border-bottom: 1px solid #1E3C5A;");
+    m_portalUrlLabelB->setAlignment(Qt::AlignCenter);
+
+    // --- Credential reveal banner (hidden until a credential arrives) ---
+    m_credentialBannerB = new QLabel(m_pageB);
+    m_credentialBannerB->setAlignment(Qt::AlignCenter);
+    m_credentialBannerB->setWordWrap(true);
+    m_credentialBannerB->setStyleSheet(
+        "background: #1a0000; color: #FF3333; font-family: Consolas, monospace; "
+        "font-size: 28px; font-weight: bold; padding: 20px; "
+        "border: 3px solid #FF3333; border-radius: 6px;");
+    m_credentialBannerB->hide();
+
+    // --- Main splitter ---
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
 
     auto* leftPane = new QWidget(splitter);
@@ -530,7 +586,9 @@ void MainWindow::buildPageB()
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 2);
 
-    m_pageB->contentLayout()->addWidget(splitter);
+    m_pageB->contentLayout()->addWidget(m_portalUrlLabelB);
+    m_pageB->contentLayout()->addWidget(m_credentialBannerB);
+    m_pageB->contentLayout()->addWidget(splitter, 1);
 
     auto* toA = m_pageB->addNavButton("Main");
     auto* toB = m_pageB->addNavButton("Devices");
@@ -1087,8 +1145,13 @@ void MainWindow::onDemoTimerTick()
     QJsonObject obj = m_demoEvents[m_demoIndex].toObject();
     
     // Simulate what the real TCP server does
-    if (obj.contains("type") && obj["type"] == "device") {
+    const QString type = obj.value(QStringLiteral("type")).toString();
+    if (type == QStringLiteral("device")) {
         processDeviceEvent(obj);
+    } else if (type == QStringLiteral("credential")) {
+        const QString name  = obj.value(QStringLiteral("name")).toString();
+        const QString email = obj.value(QStringLiteral("email")).toString();
+        processCredentialEvent(name, email);
     } else {
         // Assume traffic event
         QJsonDocument tempDoc(obj);

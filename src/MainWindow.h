@@ -17,6 +17,7 @@ class ScreenPage;
 class TcpJsonLineServer;
 class MapView;
 class QProcess;
+class WifiPortalServer;
 
 class MainWindow : public QMainWindow
 {
@@ -56,6 +57,7 @@ private:
     QString getLocalIpAddress() const;
     void processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj);
     void processDeviceEvent(const QJsonObject& obj);
+    void processCredentialEvent(const QString& name, const QString& email);
     void updateStatsView();
     void updateNavigationHeader();
 
@@ -99,6 +101,8 @@ private:
     // B
     QListWidget* m_devicesListB = nullptr;
     QTextEdit* m_rawTrafficViewB = nullptr;
+    QLabel* m_portalUrlLabelB = nullptr;
+    QLabel* m_credentialBannerB = nullptr;
 
     // C
     MapView* m_mapViewC = nullptr;
@@ -118,9 +122,10 @@ private:
     void updateEncryptionAnimation();
     QString generateHexPayload(int lines);
 
-    // Optional next-step integration
+    // TCP servers
     TcpJsonLineServer* m_trafficServer = nullptr;
     TcpJsonLineServer* m_deviceServer = nullptr;
+    WifiPortalServer*  m_portalServer  = nullptr;
 
     // Demo Mode state
     QTimer* m_demoTimer = nullptr;

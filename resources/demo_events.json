@@ -17,6 +17,7 @@
   {"ts":1008, "device":"DemoPhone", "ip":"192.168.8.100", "event":"MAPS",      "domain":"maps.googleapis.com"},
   {"ts":1009, "device":"DemoPhone", "ip":"192.168.8.100", "event":"EMAIL",     "domain":"gmail.com"},
   {"ts":1010, "device":"DemoPhone", "ip":"192.168.8.100", "event":"BANKING",   "domain":"santander.com"},
+  {"type":"credential", "name":"Maria García", "email":"maria@gmail.com"},
   {"ts":1011, "device":"DemoPhone", "ip":"192.168.8.100", "event":"STREAMING", "domain":"netflix.com"},
 
   {"type":"device", "action":"disconnected", "device":"iPhone 13",    "ip":"192.168.8.101"},
