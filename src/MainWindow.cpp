@@ -93,6 +93,36 @@ void appendConsole(QTextEdit* console, const QString& line)
     console->append(line);
     console->verticalScrollBar()->setValue(console->verticalScrollBar()->maximum());
 }
+
+// Returns a hex color string for a given service event type.
+// Red = dangerous/personal, Cyan = encrypted comms, Yellow = social,
+// Orange = entertainment/shopping, Gray = background noise.
+QString serviceColor(const QString& event)
+{
+    static const QHash<QString, QString> kColors = {
+        { "BANKING",   "#FF3333" },   // red       — most alarming
+        { "EMAIL",     "#FF6644" },   // red-orange — personal
+        { "VPN",       "#FF3333" },   // red        — security signal
+        { "WHATSAPP",  "#00FFFF" },   // cyan       — star of Screen E
+        { "SOCIAL",    "#FFD700" },   // yellow     — personal/private
+        { "SHOPPING",  "#FFB300" },   // amber      — commercial
+        { "AMAZON",    "#FFB300" },   // amber
+        { "VIDEO",     "#FF9900" },   // orange     — entertainment
+        { "STREAMING", "#FF9900" },   // orange
+        { "GAMING",    "#AA66FF" },   // purple
+        { "MAPS",      "#88CCFF" },   // light blue — geographic
+        { "REGIONAL",  "#88CCFF" },
+        { "LATAM",     "#88CCFF" },
+        { "PACIFIC",   "#88CCFF" },
+        { "TELEMETRY", "#888888" },   // gray       — background noise
+        { "CDN",       "#888888" },
+        { "MICROSOFT", "#AAAAAA" },
+        { "APPLE",     "#AAAAAA" },
+        { "SEARCH",    "#00FF44" },   // green      — neutral
+        { "NEWS",      "#00FF44" },
+    };
+    return kColors.value(event, "#CCCCCC");
+}
 } // namespace
 
 MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
@@ -242,13 +272,26 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
     const QString ip = obj.value("ip").toString().trimmed();
 
     if (m_rawTrafficViewB) {
-        m_rawTrafficViewB->append(QString::fromUtf8(rawLine));
+        const QString ts    = QDateTime::currentDateTime().toString("hh:mm:ss");
+        const QString color = serviceColor(event);
+        const QString line  = event.isEmpty()
+            ? QString::fromUtf8(rawLine).toHtmlEscaped()
+            : QString("<font color='%1'><b>%2</b></font>&nbsp;&nbsp;"
+                      "<font color='#CCCCCC'>%3</font>&nbsp;&nbsp;"
+                      "<font color='#555555'>%4</font>")
+              .arg(color, event, domain, ip);
+        m_rawTrafficViewB->append(
+            QString("<font color='#555555'>[%1]</font>&nbsp;&nbsp;%2").arg(ts, line));
+        m_rawTrafficViewB->verticalScrollBar()->setValue(
+            m_rawTrafficViewB->verticalScrollBar()->maximum());
     }
 
     if (m_config.mode == ShowConfig::Mode::Demo && m_console2) {
-        const QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
+        const QString ts    = QDateTime::currentDateTime().toString("hh:mm:ss");
+        const QString color = serviceColor(event);
         appendConsole(m_console2,
-            QString("[%1] %-15s -> %-32s [%2]").arg(ts).arg(ip).arg(domain).arg(event));
+            QString("[%1] %2 -&gt; %3 [<font color='%4'><b>%5</b></font>]")
+            .arg(ts, ip, domain, color, event));
     }
 
     // Poblar lista de devices también desde tráfico
@@ -289,8 +332,11 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
         }
 
         if (selectedIp.isEmpty() || selectedIp == ip) {
+            const QString color = serviceColor(event);
             m_filteredTrafficViewC->append(
-                QString("%1  %2  %3").arg(device.isEmpty() ? ip : device, event, domain));
+                QString("<font color='%1'><b>%2</b></font>&nbsp;&nbsp;"
+                        "<font color='#CCCCCC'>%3</font>")
+                .arg(color, event, domain));
             // Auto-scroll ticker to the bottom
             m_filteredTrafficViewC->verticalScrollBar()->setValue(m_filteredTrafficViewC->verticalScrollBar()->maximum());
             
@@ -577,6 +623,7 @@ void MainWindow::buildPageB()
 
     m_rawTrafficViewB = new QTextEdit(rightPane);
     m_rawTrafficViewB->setReadOnly(true);
+    m_rawTrafficViewB->setAcceptRichText(true);
 
     rightLayout->addWidget(rawTitle);
     rightLayout->addWidget(m_rawTrafficViewB, 1);
@@ -632,6 +679,7 @@ void MainWindow::buildPageC()
 
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
     m_filteredTrafficViewC->setReadOnly(true);
+    m_filteredTrafficViewC->setAcceptRichText(true);
 
     eventsLayout->addWidget(eventsTitle);
     eventsLayout->addWidget(m_filteredTrafficViewC, 1);
