@@ -71,6 +71,8 @@ private:
     QTimer* m_routerRetryTimer  = nullptr;
     QTimer* m_actSequenceTimer  = nullptr;
     int     m_actSequenceIndex  = 0;
+    QTimer* m_demoSyslogTimer   = nullptr;
+    int     m_syslogLine        = 0;
 
     QStackedWidget* m_stack = nullptr;
 

@@ -47,7 +47,52 @@ QString pageName(MainWindow::PageId pageId)
     }
     return "?";
 }
+
+// Stable MAC / RSSI for simulated demo devices
+const QHash<QString, QString> kDemoMac = {
+    {"192.168.8.100", "a4:c3:f0:85:db:21"},
+    {"192.168.8.101", "b8:27:eb:12:34:56"},
+    {"192.168.8.102", "dc:a6:32:ab:cd:ef"},
+    {"192.168.8.103", "f0:18:98:44:55:66"},
+    {"192.168.8.104", "08:3a:88:72:13:fa"},
+};
+const QHash<QString, int> kDemoRssi = {
+    {"192.168.8.100", -52},
+    {"192.168.8.101", -61},
+    {"192.168.8.102", -68},
+    {"192.168.8.103", -74},
+    {"192.168.8.104", -58},
+};
+const QStringList kSyslogLines = {
+    "dnsmasq: DHCP lease renewed for 192.168.8.100",
+    "hostapd: wlan0: STA associated (RSSI: -52 dBm)",
+    "kernel: nf_conntrack: table full, dropping packet",
+    "dnsmasq: cached google.com -> 142.250.185.78",
+    "nftables: forward rule matched -- ACCEPT",
+    "kernel: wlan0: beacon interval set to 100 TU",
+    "dnsmasq: cached whatsapp.net -> 31.13.88.100",
+    "hostapd: wlan0: STA disassociated (reason 3)",
+    "kernel: br-lan: port 2(wlan0) entered forwarding state",
+    "dnsmasq: DHCP offer 192.168.8.102 to Samsung S24",
+    "nftables: drop rule matched -- blocked port 23 (telnet)",
+    "kernel: ath9k: hardware reset, recovering",
+    "dnsmasq: cached netflix.com -> 52.0.128.0",
+    "hostapd: wlan0: new STA -- 4-way handshake complete",
+    "kernel: net: 3 IPsec SA loaded",
+    "dnsmasq: DHCP ack 192.168.8.101 to iPhone 13",
+    "hostapd: wlan0: station power save mode off",
+    "kernel: wlan0: RX reassoc from 192.168.8.103",
+    "dnsmasq: cached youtube.com -> 172.217.17.14",
+    "nftables: nat masquerade 192.168.8.0/24 -> wan0",
+};
+
+void appendConsole(QTextEdit* console, const QString& line)
+{
+    if (!console) return;
+    console->append(line);
+    console->verticalScrollBar()->setValue(console->verticalScrollBar()->maximum());
 }
+} // namespace
 
 MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     : QMainWindow(parent), m_config(config)
@@ -102,11 +147,49 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     }
 
     if (m_config.mode == ShowConfig::Mode::Demo) {
-        if (m_console1) m_console1->setPlainText("[ DEMO MODE ]\nNo router connection required.");
-        if (m_console2) m_console2->setPlainText("[ DEMO MODE ]\nWaiting for simulated events.");
-        if (m_console3) m_console3->setPlainText("[ DEMO MODE ]\nLogs disabled.");
-        if (m_console4) m_console4->setPlainText("[ DEMO MODE ]\nConnections hidden.");
+        const QString t = QDateTime::currentDateTime().toString("hh:mm:ss");
+        if (m_console1) m_console1->setPlainText(
+            QString("[%1] device_watch.sh started\n[%1] Listening for DHCP/arp events...").arg(t));
+        if (m_console2) m_console2->setPlainText(
+            QString("[%1] send_traffic_events.sh started\n[%1] Listening on port 5555...").arg(t));
+        if (m_console3) m_console3->setPlainText(
+            QString("[%1] GL-MT300N-V2 OpenWrt 23.05.3\n[%1] System ready.").arg(t));
+        if (m_console4) m_console4->setPlainText(
+            QString("[%1] Active connections\n%-18s %-20s %-8s %s\n")
+            .arg(t).arg("IP").arg("MAC").arg("Signal").arg("State"));
         startDemoMode();
+
+        // NODE 03 — rotating syslog lines
+        // NODE 04 — live connection table (reads current device list)
+        m_demoSyslogTimer = new QTimer(this);
+        connect(m_demoSyslogTimer, &QTimer::timeout, this, [this]() {
+            const QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
+
+            appendConsole(m_console3,
+                QString("[%1] %2").arg(ts).arg(kSyslogLines[m_syslogLine % kSyslogLines.size()]));
+            ++m_syslogLine;
+
+            if (m_console4 && m_devicesListB) {
+                m_console4->append(QString("\n[%1] Active connections:").arg(ts));
+                m_console4->append(QString("  %-18s %-20s %-8s %s")
+                    .arg("IP").arg("MAC").arg("Signal").arg("State"));
+                for (int i = 0; i < m_devicesListB->count(); ++i) {
+                    QListWidgetItem* item = m_devicesListB->item(i);
+                    if (!item) continue;
+                    const bool connected = (item->background().color() == QColor(Qt::green));
+                    if (!connected) continue;
+                    const QString ip  = item->toolTip();
+                    const QString mac = kDemoMac.value(ip, "00:00:00:00:00:00");
+                    const int rssi    = kDemoRssi.value(ip, -70);
+                    m_console4->append(QString("  %-18s %-20s %-8s ASSOC")
+                        .arg(ip).arg(mac).arg(QString("%1 dBm").arg(rssi)));
+                }
+                m_console4->verticalScrollBar()->setValue(
+                    m_console4->verticalScrollBar()->maximum());
+            }
+        });
+        m_demoSyslogTimer->start(2500);
+
         if (m_config.actSequence) {
             m_actSequenceTimer = new QTimer(this);
             connect(m_actSequenceTimer, &QTimer::timeout, this, [this]() {
@@ -151,6 +234,12 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
 
     if (m_rawTrafficViewB) {
         m_rawTrafficViewB->append(QString::fromUtf8(rawLine));
+    }
+
+    if (m_config.mode == ShowConfig::Mode::Demo && m_console2) {
+        const QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
+        appendConsole(m_console2,
+            QString("[%1] %-15s -> %-32s [%2]").arg(ts).arg(ip).arg(domain).arg(event));
     }
 
     // Poblar lista de devices también desde tráfico
@@ -279,6 +368,14 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     // Update Navigation header if the currently selected device was updated
     if (foundItem && m_devicesListB->currentItem() == foundItem) {
         updateNavigationHeader();
+    }
+
+    if (m_config.mode == ShowConfig::Mode::Demo && m_console1) {
+        const QString ts   = QDateTime::currentDateTime().toString("hh:mm:ss");
+        const QString sign = (action == "connected") ? "+" : "-";
+        appendConsole(m_console1,
+            QString("[%1] %2  %-16s  %3  %4")
+            .arg(ts).arg(sign).arg(device).arg(ip).arg(action));
     }
 }
 
