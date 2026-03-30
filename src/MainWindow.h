@@ -6,9 +6,11 @@
 #include <QDateTime>
 #include "ShowConfig.h"
 
+class QGraphicsOpacityEffect;
+class QProgressBar;
+class QPropertyAnimation;
 class QStackedWidget;
 class QListWidget;
-class QProgressBar;
 class QTextEdit;
 class QLabel;
 class QPushButton;
@@ -77,7 +79,9 @@ private:
     QTimer* m_demoSyslogTimer   = nullptr;
     int     m_syslogLine        = 0;
 
-    QStackedWidget* m_stack = nullptr;
+    QStackedWidget*       m_stack             = nullptr;
+    QWidget*              m_transitionOverlay = nullptr;
+    QPropertyAnimation*   m_transitionAnim    = nullptr;
 
     ScreenPage* m_pageA = nullptr;
     ScreenPage* m_pageB = nullptr;

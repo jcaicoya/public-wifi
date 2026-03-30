@@ -33,7 +33,9 @@
 #include <QWidget>
 #include <QDebug>
 
+#include <QGraphicsOpacityEffect>
 #include <QProgressBar>
+#include <QPropertyAnimation>
 #include <QRandomGenerator>
 
 namespace
@@ -512,6 +514,18 @@ void MainWindow::buildUi()
     m_stack->addWidget(m_pageC);
     m_stack->addWidget(m_pageD);
     m_stack->addWidget(m_pageE);
+
+    // Full-window black overlay used for fade-between-screens transitions
+    m_transitionOverlay = new QWidget(this);
+    m_transitionOverlay->setStyleSheet(QStringLiteral("background: black;"));
+    m_transitionOverlay->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_transitionOverlay->hide();
+
+    auto* opacityEffect = new QGraphicsOpacityEffect(m_transitionOverlay);
+    opacityEffect->setOpacity(0.0);
+    m_transitionOverlay->setGraphicsEffect(opacityEffect);
+
+    m_transitionAnim = new QPropertyAnimation(opacityEffect, "opacity", this);
 }
 
 void MainWindow::buildPageA()
@@ -1180,13 +1194,45 @@ void MainWindow::updateStatsView()
 
 void MainWindow::goTo(PageId pageId)
 {
-    m_stack->setCurrentIndex(static_cast<int>(pageId));
-    statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
+    // Abort any in-progress transition cleanly
+    if (m_transitionAnim && m_transitionAnim->state() == QAbstractAnimation::Running)
+        m_transitionAnim->stop();
 
-    if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
-        if (m_actSequenceTimer) m_actSequenceTimer->stop(); // Paused — animation will restart it
-        startEncryptionDemo();
-    }
+    m_transitionOverlay->setGeometry(rect());
+    m_transitionOverlay->raise();
+    m_transitionOverlay->show();
+
+    // Phase 1 — fade to black (100 ms)
+    m_transitionAnim->setStartValue(0.0);
+    m_transitionAnim->setEndValue(1.0);
+    m_transitionAnim->setDuration(100);
+    m_transitionAnim->setEasingCurve(QEasingCurve::InQuad);
+
+    disconnect(m_transitionAnim, &QPropertyAnimation::finished, nullptr, nullptr);
+    connect(m_transitionAnim, &QPropertyAnimation::finished, this, [this, pageId]() {
+
+        // Switch at peak black
+        m_stack->setCurrentIndex(static_cast<int>(pageId));
+        statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
+
+        if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
+            if (m_actSequenceTimer) m_actSequenceTimer->stop();
+            startEncryptionDemo();
+        }
+
+        // Phase 2 — fade from black (200 ms)
+        m_transitionAnim->setStartValue(1.0);
+        m_transitionAnim->setEndValue(0.0);
+        m_transitionAnim->setDuration(200);
+        m_transitionAnim->setEasingCurve(QEasingCurve::OutQuad);
+
+        disconnect(m_transitionAnim, &QPropertyAnimation::finished, nullptr, nullptr);
+        connect(m_transitionAnim, &QPropertyAnimation::finished, this, [this]() {
+            m_transitionOverlay->hide();
+        });
+        m_transitionAnim->start();
+    });
+    m_transitionAnim->start();
 }
 
 QString MainWindow::getLocalIpAddress() const
