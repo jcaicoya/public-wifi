@@ -33,6 +33,7 @@
 #include <QWidget>
 #include <QDebug>
 
+#include <QProgressBar>
 #include <QRandomGenerator>
 
 namespace
@@ -92,6 +93,39 @@ void appendConsole(QTextEdit* console, const QString& line)
     if (!console) return;
     console->append(line);
     console->verticalScrollBar()->setValue(console->verticalScrollBar()->maximum());
+}
+
+// Risk weights per service — used for score computation and sort order.
+const QHash<QString, int> kServiceWeights = {
+    { "BANKING",   30 },
+    { "VPN",       20 },
+    { "EMAIL",     15 },
+    { "SOCIAL",    12 },
+    { "MAPS",      10 },
+    { "SHOPPING",   8 },
+    { "AMAZON",     8 },
+    { "TELEMETRY",  8 },
+    { "WHATSAPP",   6 },
+    { "STREAMING",  4 },
+    { "VIDEO",      4 },
+    { "REGIONAL",   3 },
+    { "LATAM",      3 },
+    { "PACIFIC",    3 },
+    { "GAMING",     3 },
+    { "SEARCH",     3 },
+    { "NEWS",       2 },
+    { "MICROSOFT",  2 },
+    { "APPLE",      2 },
+    { "CDN",        1 },
+};
+
+// Score 0–100 from unique services seen (each type counted once, not per request).
+int computeDangerScore(const QHash<QString, int>& serviceCounts)
+{
+    int score = 0;
+    for (auto it = serviceCounts.cbegin(); it != serviceCounts.cend(); ++it)
+        score += kServiceWeights.value(it.key(), 1);
+    return qMin(score, 100);
 }
 
 // Returns a hex color string for a given service event type.
@@ -706,20 +740,56 @@ void MainWindow::buildPageC()
 
 void MainWindow::buildPageD()
 {
-    m_pageD = new ScreenPage("", "Statistics / History", this);
+    m_pageD = new ScreenPage("", "Risk Profile", this);
 
-    auto* label = new QLabel("Device Profile", m_pageD);
-    QFont font = label->font();
-    font.setPointSize(20);
-    font.setBold(true);
-    label->setFont(font);
+    // --- Score panel ---
+    auto* scoreFrame = new QFrame(m_pageD);
+    scoreFrame->setStyleSheet(
+        "QFrame { background: #0d0d1a; border: 1px solid #1E283C; border-radius: 8px; }");
+    scoreFrame->setFixedHeight(200);
+    auto* scoreLayout = new QVBoxLayout(scoreFrame);
+    scoreLayout->setAlignment(Qt::AlignCenter);
+    scoreLayout->setSpacing(6);
 
+    auto* scoreTitleLabel = new QLabel(QStringLiteral("THREAT SCORE"), scoreFrame);
+    scoreTitleLabel->setAlignment(Qt::AlignCenter);
+    scoreTitleLabel->setStyleSheet(
+        "color: #666666; font-family: Consolas; font-size: 13px; letter-spacing: 4px; border: none;");
+
+    m_scoreLabelD = new QLabel(QStringLiteral("--"), scoreFrame);
+    m_scoreLabelD->setAlignment(Qt::AlignCenter);
+    m_scoreLabelD->setStyleSheet(
+        "color: #444444; font-family: Consolas; font-size: 72px; font-weight: bold; border: none;");
+
+    m_scoreBarD = new QProgressBar(scoreFrame);
+    m_scoreBarD->setRange(0, 100);
+    m_scoreBarD->setValue(0);
+    m_scoreBarD->setTextVisible(false);
+    m_scoreBarD->setFixedHeight(18);
+    m_scoreBarD->setStyleSheet(
+        "QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
+        "QProgressBar::chunk { background: #444444; border-radius: 9px; }");
+
+    m_riskLabelD = new QLabel(QStringLiteral("AWAITING DATA"), scoreFrame);
+    m_riskLabelD->setAlignment(Qt::AlignCenter);
+    m_riskLabelD->setStyleSheet(
+        "color: #444444; font-family: Consolas; font-size: 20px; font-weight: bold; "
+        "letter-spacing: 3px; border: none;");
+
+    scoreLayout->addWidget(scoreTitleLabel);
+    scoreLayout->addWidget(m_scoreLabelD);
+    scoreLayout->addWidget(m_scoreBarD);
+    scoreLayout->addWidget(m_riskLabelD);
+
+    // --- Service breakdown ---
     m_statsPlaceholderD = new QTextEdit(m_pageD);
     m_statsPlaceholderD->setReadOnly(true);
-    m_statsPlaceholderD->setStyleSheet("background: #202020; color: #00FF44; font-family: Consolas, monospace; font-size: 16px;");
-    m_statsPlaceholderD->setPlainText("Awaiting data...");
+    m_statsPlaceholderD->setAcceptRichText(true);
+    m_statsPlaceholderD->setStyleSheet(
+        "background: #0d0d1a; color: #888888; font-family: Consolas, monospace; "
+        "font-size: 14px; border: 1px solid #1E283C;");
 
-    m_pageD->contentLayout()->addWidget(label);
+    m_pageD->contentLayout()->addWidget(scoreFrame);
     m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
 
     auto* toA = m_pageD->addNavButton("Main");
@@ -999,55 +1069,113 @@ void MainWindow::updateNavigationHeader()
 
 void MainWindow::updateStatsView()
 {
-    if (!m_statsPlaceholderD) return;
+    auto resetToIdle = [this](const QString& msg) {
+        if (m_scoreLabelD)  m_scoreLabelD->setText(QStringLiteral("--"));
+        if (m_riskLabelD)   m_riskLabelD->setText(QStringLiteral("AWAITING DATA"));
+        if (m_scoreBarD)    m_scoreBarD->setValue(0);
+        const QString dimStyle =
+            "color: #444444; font-family: Consolas; font-size: %1px; font-weight: bold; "
+            "letter-spacing: 3px; border: none;";
+        if (m_scoreLabelD) m_scoreLabelD->setStyleSheet(dimStyle.arg(72));
+        if (m_riskLabelD)  m_riskLabelD->setStyleSheet(dimStyle.arg(20));
+        if (m_scoreBarD)   m_scoreBarD->setStyleSheet(
+            "QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
+            "QProgressBar::chunk { background: #444444; border-radius: 9px; }");
+        if (m_statsPlaceholderD)
+            m_statsPlaceholderD->setHtml(
+                QStringLiteral("<p style='color:#555; font-family:Consolas;'>") + msg + "</p>");
+    };
 
-    QString selectedIp;
-    QString selectedName;
+    QString selectedIp, selectedName;
     if (m_devicesListB && m_devicesListB->currentItem()) {
-        selectedIp = m_devicesListB->currentItem()->toolTip();
+        selectedIp   = m_devicesListB->currentItem()->toolTip();
         selectedName = m_devicesListB->currentItem()->text();
     }
 
     if (selectedIp.isEmpty()) {
-        m_statsPlaceholderD->setPlainText("No device selected.\n\nSelect a device on Screen B to view its statistics.");
+        resetToIdle(QStringLiteral("Select a device on Screen B to view its risk profile."));
         return;
     }
-
     if (!m_deviceStats.contains(selectedIp)) {
-        m_statsPlaceholderD->setPlainText(QString("No statistics available yet for: %1").arg(selectedName));
+        resetToIdle(QString("No data yet for: %1").arg(selectedName));
         return;
     }
 
     const auto& stats = m_deviceStats[selectedIp];
-    
-    QString text = QString("=== TARGET PROFILE: %1 ===\n").arg(selectedName);
-    text += QString("Target IP: %1\n\n").arg(selectedIp);
-    
-    qint64 durationSecs = stats.firstSeen.secsTo(stats.lastSeen);
-    if (durationSecs == 0) durationSecs = 1;
+    const int score   = computeDangerScore(stats.serviceCounts);
 
-    text += QString("First Seen : %1\n").arg(stats.firstSeen.toString("hh:mm:ss"));
-    text += QString("Last Seen  : %1\n").arg(stats.lastSeen.toString("hh:mm:ss"));
-    text += QString("Duration   : %1 seconds\n").arg(durationSecs);
-    text += QString("Total Pkts : %1\n\n").arg(stats.totalEvents);
-    
-    text += "--- IDENTIFIED SERVICES ---\n";
-    if (stats.serviceCounts.isEmpty()) {
-        text += "None detected yet.\n";
+    // Determine risk tier
+    QString riskText, riskColor;
+    if (score <= 25) {
+        riskText  = QStringLiteral("LOW RISK");
+        riskColor = QStringLiteral("#00AA44");
+    } else if (score <= 50) {
+        riskText  = QStringLiteral("MODERATE");
+        riskColor = QStringLiteral("#FFD700");
+    } else if (score <= 75) {
+        riskText  = QStringLiteral("HIGH RISK");
+        riskColor = QStringLiteral("#FF8800");
     } else {
-        auto keys = stats.serviceCounts.keys();
-        std::sort(keys.begin(), keys.end(), [&stats](const QString& a, const QString& b) {
-            return stats.serviceCounts[a] > stats.serviceCounts[b];
-        });
-        
-        for (const QString& service : keys) {
-            text += QString("%1 : %2 requests\n")
-                        .arg(service, -12)
-                        .arg(stats.serviceCounts[service]);
-        }
+        riskText  = QStringLiteral("CRITICAL");
+        riskColor = QStringLiteral("#FF3333");
     }
 
-    m_statsPlaceholderD->setPlainText(text);
+    if (m_scoreLabelD) {
+        m_scoreLabelD->setText(QString::number(score));
+        m_scoreLabelD->setStyleSheet(
+            QString("color: %1; font-family: Consolas; font-size: 72px; "
+                    "font-weight: bold; border: none;").arg(riskColor));
+    }
+    if (m_scoreBarD) {
+        m_scoreBarD->setValue(score);
+        m_scoreBarD->setStyleSheet(
+            QString("QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
+                    "QProgressBar::chunk { background: %1; border-radius: 9px; }").arg(riskColor));
+    }
+    if (m_riskLabelD) {
+        m_riskLabelD->setText(riskText);
+        m_riskLabelD->setStyleSheet(
+            QString("color: %1; font-family: Consolas; font-size: 20px; font-weight: bold; "
+                    "letter-spacing: 3px; border: none;").arg(riskColor));
+    }
+
+    // Service breakdown — sorted by weight descending, colored
+    const qint64 durationSecs = qMax(stats.firstSeen.secsTo(stats.lastSeen), qint64(1));
+
+    QString html =
+        QString("<p style='color:#00FFFF; font-family:Consolas; font-size:13px;'>"
+                "TARGET: <b>%1</b> &nbsp;(%2)</p>"
+                "<p style='color:#555; font-family:Consolas; font-size:12px;'>"
+                "First seen: %3 &nbsp;|&nbsp; Duration: %4s &nbsp;|&nbsp; Packets: %5</p>"
+                "<hr style='border:none; border-top:1px solid #1E283C;'/>")
+        .arg(selectedName, selectedIp,
+             stats.firstSeen.toString("hh:mm:ss"),
+             QString::number(durationSecs),
+             QString::number(stats.totalEvents));
+
+    auto keys = stats.serviceCounts.keys();
+    std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) {
+        return kServiceWeights.value(a, 1) > kServiceWeights.value(b, 1);
+    });
+
+    html += QStringLiteral("<table style='font-family:Consolas; font-size:14px; width:100%;'>");
+    for (const QString& svc : keys) {
+        const QString color  = serviceColor(svc);
+        const int count      = stats.serviceCounts[svc];
+        const int weight     = kServiceWeights.value(svc, 1);
+        const int barWidth   = qMin(weight * 3, 120); // visual bar width in px
+        html += QString(
+            "<tr>"
+            "<td style='width:130px;'><font color='%1'><b>%2</b></font></td>"
+            "<td><div style='display:inline-block; background:%1; height:10px; "
+            "width:%3px; border-radius:5px; vertical-align:middle;'></div></td>"
+            "<td style='color:#666; padding-left:8px;'>%4 req</td>"
+            "</tr>")
+            .arg(color, svc).arg(barWidth).arg(count);
+    }
+    html += QStringLiteral("</table>");
+
+    if (m_statsPlaceholderD) m_statsPlaceholderD->setHtml(html);
 }
 
 void MainWindow::goTo(PageId pageId)

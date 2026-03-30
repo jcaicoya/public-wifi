@@ -8,6 +8,7 @@
 
 class QStackedWidget;
 class QListWidget;
+class QProgressBar;
 class QTextEdit;
 class QLabel;
 class QPushButton;
@@ -109,7 +110,10 @@ private:
     QTextEdit* m_filteredTrafficViewC = nullptr;
 
     // D
-    QTextEdit* m_statsPlaceholderD = nullptr;
+    QLabel*       m_scoreLabelD       = nullptr;
+    QLabel*       m_riskLabelD        = nullptr;
+    QProgressBar* m_scoreBarD         = nullptr;
+    QTextEdit*    m_statsPlaceholderD = nullptr;
 
     // E
     QLabel* m_lockedPlaceholderE = nullptr;
