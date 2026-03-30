@@ -1,5 +1,34 @@
 #include "MapView.h"
 
+namespace {
+QColor serviceColor(const QString& service)
+{
+    static const QHash<QString, QColor> kColors = {
+        { "BANKING",   QColor("#FF3333") },
+        { "EMAIL",     QColor("#FF6644") },
+        { "VPN",       QColor("#FF3333") },
+        { "WHATSAPP",  QColor("#00FFFF") },
+        { "SOCIAL",    QColor("#FFD700") },
+        { "SHOPPING",  QColor("#FFB300") },
+        { "AMAZON",    QColor("#FFB300") },
+        { "VIDEO",     QColor("#FF9900") },
+        { "STREAMING", QColor("#FF9900") },
+        { "GAMING",    QColor("#AA66FF") },
+        { "MAPS",      QColor("#88CCFF") },
+        { "REGIONAL",  QColor("#88CCFF") },
+        { "LATAM",     QColor("#88CCFF") },
+        { "PACIFIC",   QColor("#88CCFF") },
+        { "TELEMETRY", QColor("#888888") },
+        { "CDN",       QColor("#888888") },
+        { "MICROSOFT", QColor("#AAAAAA") },
+        { "APPLE",     QColor("#AAAAAA") },
+        { "SEARCH",    QColor("#00FF44") },
+        { "NEWS",      QColor("#00FF44") },
+    };
+    return kColors.value(service, QColor("#CCCCCC"));
+}
+} // namespace
+
 #include <QPainter>
 #include <QPen>
 #include <QColor>
@@ -205,7 +234,9 @@ void MapView::updateAnimations()
         dirty = true;
 
         if (m_connections[i].progress >= 1.0) {
-            m_regionHighlights[m_connections[i].targetRegion] = 1.0;
+            const QString region = m_connections[i].targetRegion;
+            m_regionHighlights[region] = 1.0;
+            m_regionLabels[region]     = m_connections[i].service;
             m_connections.removeAt(i);
         }
     }
@@ -296,10 +327,7 @@ void MapView::paintEvent(QPaintEvent* event)
         qreal highlight = m_regionHighlights.value(regionName, 0.0);
 
         if (highlight > 0.0) {
-            int r = static_cast<int>(0   * highlight);
-            int g = static_cast<int>(255 * highlight);
-            int b = static_cast<int>(255 * highlight);
-            QColor fillColor(r, g, b, static_cast<int>(120 * highlight));
+            QColor fillColor(0, 255, 255, static_cast<int>(120 * highlight));
             QColor edgeColor(0, 255, 255, static_cast<int>(255 * highlight));
 
             painter.setBrush(fillColor);
@@ -308,10 +336,33 @@ void MapView::paintEvent(QPaintEvent* event)
             painter.setPen(regionPen);
             painter.drawPath(path);
 
-            // Label appears bright white when the region is active
-            painter.setPen(QColor(255, 255, 255, static_cast<int>(230 * highlight)));
-            QPointF center = path.boundingRect().center();
-            painter.drawText(QRectF(center.x() - 70, center.y() - 10, 140, 20), Qt::AlignCenter, regionName);
+            const QPointF center = path.boundingRect().center();
+            const QString service = m_regionLabels.value(regionName);
+
+            // Service name — large, colored, fades with highlight
+            if (!service.isEmpty()) {
+                QColor svcColor = serviceColor(service);
+                svcColor.setAlpha(static_cast<int>(255 * highlight));
+
+                // Dark background pill for legibility at projector distance
+                QColor bgColor(0, 0, 0, static_cast<int>(160 * highlight));
+                painter.setBrush(bgColor);
+                painter.setPen(Qt::NoPen);
+                painter.drawRoundedRect(QRectF(center.x() - 68, center.y() - 20, 136, 26), 4, 4);
+
+                QFont svcFont(QStringLiteral("Consolas"), 14, QFont::Bold);
+                painter.setFont(svcFont);
+                painter.setPen(svcColor);
+                painter.drawText(QRectF(center.x() - 68, center.y() - 20, 136, 26),
+                                 Qt::AlignCenter, service);
+            }
+
+            // Region name — small, dim, below service label
+            QFont regionFont(QStringLiteral("Consolas"), 8);
+            painter.setFont(regionFont);
+            painter.setPen(QColor(200, 200, 200, static_cast<int>(160 * highlight)));
+            painter.drawText(QRectF(center.x() - 70, center.y() + 8, 140, 16),
+                             Qt::AlignCenter, regionName);
         }
     }
 
@@ -347,10 +398,6 @@ void MapView::paintEvent(QPaintEvent* event)
         
         painter.setBrush(QColor(0, 255, 255, 120)); // Glow
         painter.drawEllipse(currentPos, 8, 8);
-        
-        // Follow-text (service name flies with the packet)
-        painter.setPen(QColor(255, 255, 255, 200));
-        painter.drawText(currentPos + QPointF(10, -10), conn.service);
     }
 
     // Draw Fixed Phone Location (Asturias, Spain)
