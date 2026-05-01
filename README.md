@@ -27,6 +27,38 @@ Live stage demonstration of public Wi-Fi privacy risks. A controlled phone conne
 
 ---
 
+## Packaging a Release
+
+Use `package-release.ps1` to build a distributable zip and record it in `releases.json`.
+
+```powershell
+# Standard: build + zip if the commit has changed
+.\package-release.ps1
+
+# Force repackage even if the commit is the same
+.\package-release.ps1 -Force
+```
+
+The script:
+
+1. Compares the current `HEAD` commit against the last entry in `releases.json`
+2. If different, builds the Release target and creates `dist\cybershow-wifi-vNN.zip`
+3. Appends an entry to `releases.json` (commit hash, date, message, zip name)
+4. Creates a local git tag (`v00`, `v01`, …)
+
+After packaging, push the new tag to the remote:
+
+```powershell
+git push --tags
+```
+
+The zip in `dist\` is self-contained for Windows and includes the runtime resource files
+(`resources/regions.json`, `resources/services.json`) required at startup.
+The target machine must have the
+[Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) installed.
+
+`dist\` is gitignored — only `releases.json` and the git tags are committed.
+
 ## Build
 
 Requirements: Qt 6.7.3, CMake 3.28+, MSVC (Windows).

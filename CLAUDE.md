@@ -71,6 +71,24 @@ Left/Right arrows cycle screens.
 viewBox `82.992 45.607 2528.57 1238.92` — pseudo-equirectangular.
 Origin: Oviedo, Asturias, Spain (`svgCoord(-5.845, 43.361)`).
 
+## Packaging
+
+Script: `package-release.ps1`
+Tracking file: `releases.json` (committed to git)
+Output folder: `dist\` (gitignored)
+Zip naming: `cybershow-wifi-vNN.zip` (zero-padded, incrementing)
+
+Workflow:
+- `.\package-release.ps1` — builds Release, zips, appends to releases.json, creates git tag
+- `.\package-release.ps1 -Force` — same but skips commit-change check
+- `git push --tags` — push tags to remote after packaging
+
+Zip contents: `public_wifi.exe` + 6 Qt DLLs (Core, Gui, Multimedia, Network, Widgets, Svg)
++ `plugins/platforms/qwindows.dll` + `plugins/multimedia/windowsmediaplugin.dll`
++ `resources/regions.json` + `resources/services.json` (runtime files, not embedded).
+
+Target machine requires Visual C++ Redistributable (install once).
+
 ## Tools (standalone Qt apps)
 - `tools/polygon-editor/` → target `polygon_editor` — edit region polygons → saves `resources/regions.json`
 - `tools/service-mapper/` → target `service_mapper` — edit service→region mapping → saves `resources/services.json`
