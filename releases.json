@@ -6,6 +6,13 @@
       "date": "2026-05-01T11:54:47",
       "message": "Improve screen transitions",
       "zip": "cybershow-wifi-v00.zip"
+    },
+    {
+      "version": 1,
+      "commit": "331b556",
+      "date": "2026-05-01T12:01:00",
+      "message": "Document release packaging workflow in README and CLAUDE.md",
+      "zip": "cybershow-wifi-v01.zip"
     }
   ]
 }
