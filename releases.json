@@ -1,0 +1,11 @@
+{
+  "releases": [
+    {
+      "version": 0,
+      "commit": "5a2101c",
+      "date": "2026-05-01T11:54:47",
+      "message": "Improve screen transitions",
+      "zip": "cybershow-wifi-v00.zip"
+    }
+  ]
+}
