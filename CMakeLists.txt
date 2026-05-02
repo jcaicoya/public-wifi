@@ -20,6 +20,24 @@ add_executable(public_wifi src/main.cpp
         src/ShowConfig.h
         src/InitScreen.h
         src/InitScreen.cpp
+        src/cybershow/common/CyberAppMode.h
+        src/cybershow/common/CyberAppMode.cpp
+        src/cybershow/common/CyberNavigationController.h
+        src/cybershow/common/CyberNavigationController.cpp
+        src/cybershow/common/CyberOrchestratorProtocol.h
+        src/cybershow/common/ScreenDefinition.h
+        src/cybershow/ui/AlertBanner.h
+        src/cybershow/ui/AlertBanner.cpp
+        src/cybershow/ui/BottomNavBar.h
+        src/cybershow/ui/BottomNavBar.cpp
+        src/cybershow/ui/CyberBackgroundWidget.h
+        src/cybershow/ui/CyberBackgroundWidget.cpp
+        src/cybershow/ui/CyberPanel.h
+        src/cybershow/ui/CyberPanel.cpp
+        src/cybershow/ui/CyberTheme.h
+        src/cybershow/ui/CyberTheme.cpp
+        src/cybershow/ui/MetricCard.h
+        src/cybershow/ui/MetricCard.cpp
         src/TcpJsonLineServer.cpp
         src/TcpJsonLineServer.h
         src/WifiPortalServer.h
@@ -38,6 +56,11 @@ target_link_libraries(public_wifi
         Qt::Network
         Qt::Widgets
         Qt::Svg
+)
+
+target_include_directories(public_wifi PRIVATE
+        src/cybershow/common
+        src/cybershow/ui
 )
 
 add_subdirectory(tools/polygon-editor)
