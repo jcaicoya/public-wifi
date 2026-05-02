@@ -61,6 +61,8 @@ Operator verification:
 
 ## Step 3: Add Standard CLI Launch Modes
 
+Status: completed.
+
 Commit intent: implement `--configure`, `--design`, and `--show` startup behavior.
 
 Scope:

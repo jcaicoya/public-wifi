@@ -68,7 +68,15 @@ ParseResult parseAppLaunchOptions(const QStringList& arguments) {
                 result.error = "Missing value after --profile.";
                 return result;
             }
-            result.options.profile = arguments.at(++i);
+            result.options.profile = arguments.at(++i).toLower();
+            if (result.options.profile != "demo"
+                && result.options.profile != "live"
+                && result.options.profile != "dev") {
+                result.ok = false;
+                result.error = QString("Invalid --profile value: %1. Expected demo, live or dev.")
+                                   .arg(result.options.profile);
+                return result;
+            }
         } else {
             result.ok = false;
             result.error = QString("Unknown argument: %1").arg(arg);

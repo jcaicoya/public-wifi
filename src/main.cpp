@@ -1,13 +1,17 @@
 #include <QApplication>
-#include <QMessageBox>
-#include <QFile>
 #include <QDir>
+#include <QFile>
+#include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonParseError>
+#include <QMessageBox>
+#include <QScreen>
+#include <QWidget>
 #include "InitScreen.h"
 #include "MainWindow.h"
+#include "cybershow/common/CyberAppMode.h"
 
 // Returns an error description, or an empty string if everything is valid.
 static QString validateResources()
@@ -84,9 +88,97 @@ static QString validateResources()
     return {};
 }
 
+static ShowConfig configFromLaunchOptions(const cybershow::AppLaunchOptions& options)
+{
+    ShowConfig cfg;
+    cfg.launchMode = (options.launchMode == cybershow::LaunchMode::Configure)
+        ? ShowConfig::LaunchMode::Configure
+        : ShowConfig::LaunchMode::Show;
+    cfg.profile = options.profile.toLower();
+    cfg.originalModeArgument = options.originalModeArgument;
+    cfg.configPath = options.configPath;
+    cfg.screenIndex = options.screenIndex;
+    cfg.fullscreen = options.fullscreen;
+    cfg.windowed = options.windowed;
+    cfg.debug = options.debug;
+
+    if (cfg.profile == "live") {
+        cfg.mode = ShowConfig::Mode::Normal;
+        cfg.profile = "live";
+    } else {
+        cfg.mode = ShowConfig::Mode::Demo;
+        if (cfg.profile != "dev") {
+            cfg.profile = "demo";
+        }
+    }
+
+    cfg.actSequence = false;
+    return cfg;
+}
+
+static void applyLaunchOptions(ShowConfig& cfg, const cybershow::AppLaunchOptions& options)
+{
+    const ShowConfig selectedMode = cfg;
+    cfg = configFromLaunchOptions(options);
+
+    if (selectedMode.mode == ShowConfig::Mode::Demo) {
+        cfg.mode = ShowConfig::Mode::Demo;
+        cfg.profile = "demo";
+        cfg.actSequence = selectedMode.actSequence;
+    } else {
+        cfg.mode = ShowConfig::Mode::Normal;
+        cfg.profile = "live";
+        cfg.actSequence = false;
+    }
+}
+
+static void placeWindowOnRequestedScreen(QWidget& window, int screenIndex)
+{
+    if (screenIndex < 0) {
+        return;
+    }
+
+    const auto screens = QGuiApplication::screens();
+    if (screenIndex >= screens.size()) {
+        return;
+    }
+
+    const QRect available = screens.at(screenIndex)->availableGeometry();
+    window.setGeometry(available);
+    window.move(available.topLeft());
+}
+
+static void showMainWindow(MainWindow& window, const ShowConfig& config)
+{
+    placeWindowOnRequestedScreen(window, config.screenIndex);
+
+    if (config.fullscreen) {
+        window.showFullScreen();
+    } else if (config.windowed) {
+        if (config.screenIndex < 0) {
+            window.resize(1280, 720);
+        }
+        window.show();
+    } else {
+        window.showMaximized();
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+
+    const cybershow::ParseResult launchParse =
+        cybershow::parseAppLaunchOptions(QCoreApplication::arguments());
+    if (!launchParse.ok) {
+        QMessageBox::critical(
+            nullptr,
+            "Public Wi-Fi Cybershow - Startup Error",
+            "The application cannot start because the launch arguments are invalid.\n\n"
+            + launchParse.error
+        );
+        return 2;
+    }
 
     const QString resourceError = validateResources();
     if (!resourceError.isEmpty()) {
@@ -114,12 +206,20 @@ int main(int argc, char *argv[])
         "QLabel { color: #FFFFFF; }"
     );
 
-    InitScreen initScreen;
-    if (initScreen.exec() != QDialog::Accepted)
-        return 0;
+    ShowConfig config;
+    if (cybershow::setupAvailable(launchParse.options)) {
+        InitScreen initScreen;
+        if (initScreen.exec() != QDialog::Accepted)
+            return 0;
 
-    MainWindow window(initScreen.config());
-    window.showMaximized();
+        config = initScreen.config();
+        applyLaunchOptions(config, launchParse.options);
+    } else {
+        config = configFromLaunchOptions(launchParse.options);
+    }
+
+    MainWindow window(config);
+    showMainWindow(window, config);
 
     return app.exec();
 }
