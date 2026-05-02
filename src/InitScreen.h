@@ -6,6 +6,7 @@
 class QCheckBox;
 class QComboBox;
 class QGroupBox;
+class QKeyEvent;
 class QLabel;
 
 class InitScreen : public QDialog
@@ -15,7 +16,11 @@ class InitScreen : public QDialog
 public:
     explicit InitScreen(QWidget* parent = nullptr);
 
+    void setConfig(const ShowConfig& config);
     ShowConfig config() const;
+
+protected:
+    void keyPressEvent(QKeyEvent* event) override;
 
 private slots:
     void onModeChanged();

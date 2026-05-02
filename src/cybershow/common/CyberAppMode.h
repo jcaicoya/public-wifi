@@ -18,6 +18,7 @@ struct AppLaunchOptions {
     int screenIndex = -1;
     QString configPath;
     QString profile = "demo";
+    bool profileProvided = false;
     bool debug = false;
     QString originalModeArgument = "--configure";
 };

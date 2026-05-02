@@ -39,6 +39,9 @@ public:
         Encryption
     };
 
+signals:
+    void setupRequested();
+
 private:
     struct DeviceStats {
         int totalEvents = 0;

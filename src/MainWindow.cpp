@@ -1100,6 +1100,12 @@ void MainWindow::wireNavigation()
             goTo(static_cast<PageId>(currentIndex + 1));
         }
     });
+
+    new QShortcut(QKeySequence(Qt::Key_Escape), this, [this]() {
+        if (m_config.launchMode == ShowConfig::LaunchMode::Configure) {
+            emit setupRequested();
+        }
+    });
 }
 
 void MainWindow::updateNavigationHeader()

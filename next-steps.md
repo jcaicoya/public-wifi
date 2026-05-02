@@ -86,6 +86,8 @@ Operator verification:
 
 ## Step 4: Normalize Setup Access And Startup Flow
 
+Status: completed.
+
 Commit intent: align setup behavior with the common operating model.
 
 Scope:

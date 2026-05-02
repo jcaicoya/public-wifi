@@ -164,6 +164,19 @@ static void showMainWindow(MainWindow& window, const ShowConfig& config)
     }
 }
 
+static bool runSetup(ShowConfig& config, const cybershow::AppLaunchOptions& options)
+{
+    InitScreen initScreen;
+    initScreen.setConfig(config);
+    if (initScreen.exec() != QDialog::Accepted) {
+        return false;
+    }
+
+    config = initScreen.config();
+    applyLaunchOptions(config, options);
+    return true;
+}
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -206,20 +219,31 @@ int main(int argc, char *argv[])
         "QLabel { color: #FFFFFF; }"
     );
 
-    ShowConfig config;
-    if (cybershow::setupAvailable(launchParse.options)) {
-        InitScreen initScreen;
-        if (initScreen.exec() != QDialog::Accepted)
+    bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
+    ShowConfig config = (shouldShowSetup && !launchParse.options.profileProvided)
+        ? ShowConfig{}
+        : configFromLaunchOptions(launchParse.options);
+
+    while (true) {
+        if (shouldShowSetup && !runSetup(config, launchParse.options)) {
             return 0;
+        }
 
-        config = initScreen.config();
-        applyLaunchOptions(config, launchParse.options);
-    } else {
-        config = configFromLaunchOptions(launchParse.options);
+        bool setupRequested = false;
+        MainWindow window(config);
+        QObject::connect(&window, &MainWindow::setupRequested, &app, [&]() {
+            setupRequested = true;
+            window.close();
+            app.quit();
+        });
+
+        showMainWindow(window, config);
+
+        const int result = app.exec();
+        if (!setupRequested) {
+            return result;
+        }
+
+        shouldShowSetup = true;
     }
-
-    MainWindow window(config);
-    showMainWindow(window, config);
-
-    return app.exec();
 }

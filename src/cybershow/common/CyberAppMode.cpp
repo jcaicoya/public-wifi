@@ -68,6 +68,7 @@ ParseResult parseAppLaunchOptions(const QStringList& arguments) {
                 result.error = "Missing value after --profile.";
                 return result;
             }
+            result.options.profileProvided = true;
             result.options.profile = arguments.at(++i).toLower();
             if (result.options.profile != "demo"
                 && result.options.profile != "live"

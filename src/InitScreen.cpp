@@ -1,14 +1,33 @@
 #include "InitScreen.h"
 
 #include <QCheckBox>
+#include <QAbstractSpinBox>
 #include <QComboBox>
 #include <QFrame>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPixmap>
+#include <QPlainTextEdit>
 #include <QPushButton>
+#include <QTextEdit>
 #include <QVBoxLayout>
+
+namespace
+{
+bool focusIsEditable(QWidget* focusWidget)
+{
+    if (!focusWidget) return false;
+    if (qobject_cast<QLineEdit*>(focusWidget)) return true;
+    if (qobject_cast<QTextEdit*>(focusWidget)) return true;
+    if (qobject_cast<QPlainTextEdit*>(focusWidget)) return true;
+    if (qobject_cast<QAbstractSpinBox*>(focusWidget)) return true;
+    if (auto* combo = qobject_cast<QComboBox*>(focusWidget)) return combo->isEditable();
+    return false;
+}
+}
 
 InitScreen::InitScreen(QWidget* parent)
     : QDialog(parent, Qt::Window)
@@ -143,6 +162,40 @@ void InitScreen::buildUi()
     connect(startBtn, &QPushButton::clicked, this, &QDialog::accept);
 
     onModeChanged(); // set initial state
+}
+
+void InitScreen::setConfig(const ShowConfig& config)
+{
+    const bool isDemo = config.mode == ShowConfig::Mode::Demo;
+    m_runModeCombo->setCurrentIndex(isDemo ? 1 : 0);
+    m_actSeqCheck->setChecked(isDemo && config.actSequence);
+    onModeChanged();
+}
+
+void InitScreen::keyPressEvent(QKeyEvent* event)
+{
+    if (!event) {
+        return;
+    }
+
+    if (!focusIsEditable(focusWidget())) {
+        switch (event->key()) {
+        case Qt::Key_Return:
+        case Qt::Key_Enter:
+        case Qt::Key_Space:
+        case Qt::Key_Right:
+        case Qt::Key_1:
+            accept();
+            return;
+        case Qt::Key_Escape:
+            event->accept();
+            return;
+        default:
+            break;
+        }
+    }
+
+    QDialog::keyPressEvent(event);
 }
 
 void InitScreen::onModeChanged()
