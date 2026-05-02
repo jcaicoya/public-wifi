@@ -33,10 +33,15 @@
 #include <QWidget>
 #include <QDebug>
 
+#include <QAudioFormat>
+#include <QAudioSink>
+#include <QBuffer>
 #include <QGraphicsOpacityEffect>
 #include <QProgressBar>
 #include <QPropertyAnimation>
 #include <QRandomGenerator>
+
+#include <cmath>
 
 namespace
 {
@@ -158,6 +163,44 @@ QString serviceColor(const QString& event)
         { "NEWS",      "#00FF44" },
     };
     return kColors.value(event, "#CCCCCC");
+}
+// Synthesizes and plays a short sine-wave tone through the default audio output.
+// freq: Hz  |  durationMs: total length  |  amplitude: 0.0–1.0
+// Self-cleaning: QAudioSink + QBuffer are parented to `parent` and deleted on idle.
+void playTone(QObject* parent, float freq, int durationMs, float amplitude = 0.45f)
+{
+    QAudioFormat fmt;
+    fmt.setSampleRate(44100);
+    fmt.setChannelCount(1);
+    fmt.setSampleFormat(QAudioFormat::Int16);
+
+    const int rate    = 44100;
+    const int samples = rate * durationMs / 1000;
+
+    auto* pcm = new QByteArray(samples * 2, '\0');
+    auto* s   = reinterpret_cast<qint16*>(pcm->data());
+    for (int i = 0; i < samples; ++i) {
+        const float attack  = qMin(float(i)          / (rate * 0.008f), 1.0f); // 8 ms
+        const float release = qMin(float(samples - i) / (rate * 0.12f),  1.0f); // 120 ms
+        s[i] = qint16(32767.0f * amplitude * attack * release
+                      * std::sin(2.0f * float(M_PI) * freq * i / rate));
+    }
+
+    auto* buf = new QBuffer(parent);
+    buf->setData(*pcm);
+    buf->open(QIODevice::ReadOnly);
+    delete pcm;
+
+    auto* sink = new QAudioSink(fmt, parent);
+    QObject::connect(sink, &QAudioSink::stateChanged, parent,
+        [sink, buf](QAudio::State state) {
+            if (state == QAudio::IdleState) {
+                sink->stop();
+                buf->deleteLater();
+                sink->deleteLater();
+            }
+        });
+    sink->start(buf);
 }
 } // namespace
 
@@ -421,6 +464,7 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     }
 
     if (action == "connected") {
+        playTone(this, 880.0f, 160); // crisp A5 ping — new device on network
         if (!foundItem) {
             QString displayName = device.isEmpty() ? ip : device;
             auto* item = new QListWidgetItem(displayName);
@@ -473,6 +517,8 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
 void MainWindow::processCredentialEvent(const QString& name, const QString& email)
 {
     qDebug() << "[CREDENTIAL]" << name << email;
+
+    playTone(this, 330.0f, 420, 0.6f); // low, heavy alarm tone for credential reveal
 
     if (!m_credentialBannerB) return;
 
