@@ -13,6 +13,13 @@
       "date": "2026-05-01T12:01:00",
       "message": "Document release packaging workflow in README and CLAUDE.md",
       "zip": "cybershow-wifi-v01.zip"
+    },
+    {
+      "version": 2,
+      "commit": "a19b5b1",
+      "date": "2026-05-03T13:41:01",
+      "message": "Finalize refactor documentation",
+      "zip": "cybershow-wifi-v02.zip"
     }
   ]
 }
