@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QVBoxLayout>
 
 ScreenPage::ScreenPage(const QString& screenId,
@@ -21,9 +22,11 @@ ScreenPage::ScreenPage(const QString& screenId,
     auto* headerFrame = new QFrame(this);
     headerFrame->setObjectName("CyberPanelRaised");
     headerFrame->setFrameShape(QFrame::StyledPanel);
+    headerFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     auto* headerLayout = new QHBoxLayout(headerFrame);
     headerLayout->setContentsMargins(16, 12, 16, 12);
+    headerLayout->setSpacing(14);
 
     m_idLabel = new QLabel(screenId, headerFrame);
     m_idLabel->setObjectName("ScreenSubtitle");
@@ -32,6 +35,7 @@ ScreenPage::ScreenPage(const QString& screenId,
     idFont.setBold(true);
     m_idLabel->setFont(idFont);
     m_idLabel->setVisible(!screenId.isEmpty());
+    m_idLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
 
     m_titleLabel = new QLabel(title, headerFrame);
     m_titleLabel->setObjectName("ScreenTitle");
@@ -39,6 +43,8 @@ ScreenPage::ScreenPage(const QString& screenId,
     titleFont.setPointSize(20);
     titleFont.setBold(true);
     m_titleLabel->setFont(titleFont);
+    m_titleLabel->setWordWrap(true);
+    m_titleLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     headerLayout->addWidget(m_idLabel, 0);
     headerLayout->addSpacing(20);
@@ -49,6 +55,7 @@ ScreenPage::ScreenPage(const QString& screenId,
     auto* contentFrame = new QFrame(this);
     contentFrame->setObjectName("CyberPanel");
     contentFrame->setFrameShape(QFrame::StyledPanel);
+    contentFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     m_contentLayout = new QVBoxLayout(contentFrame);
     m_contentLayout->setContentsMargins(16, 16, 16, 16);
@@ -64,6 +71,7 @@ QPushButton* ScreenPage::addNavButton(const QString& text)
     if (!m_navFrame) {
         m_navFrame = new QFrame(this);
         m_navFrame->setFrameShape(QFrame::StyledPanel);
+        m_navFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
         m_navLayout = new QHBoxLayout(m_navFrame);
         m_navLayout->setContentsMargins(16, 12, 16, 12);

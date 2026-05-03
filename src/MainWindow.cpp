@@ -692,24 +692,32 @@ void MainWindow::buildPageA()
 
     auto* mainSplitter = new QSplitter(Qt::Horizontal, m_pageA);
     mainSplitter->setChildrenCollapsible(false);
+    mainSplitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Left side: 4 consoles in a grid
     auto* consolesWidget = new QWidget(mainSplitter);
+    consolesWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto* gridLayout = new QGridLayout(consolesWidget);
     gridLayout->setContentsMargins(0, 0, 0, 0);
+    gridLayout->setHorizontalSpacing(10);
+    gridLayout->setVerticalSpacing(10);
 
     auto createConsole = [](const QString& title) {
         auto* container = new QWidget();
+        container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         auto* layout = new QVBoxLayout(container);
+        layout->setSpacing(8);
         layout->setContentsMargins(0, 0, 0, 0);
         
         auto* label = new QLabel(title);
+        label->setWordWrap(true);
         label->setStyleSheet("color: #00FFFF; font-weight: bold; font-family: Consolas;");
         
         auto* textEdit = new QTextEdit();
         textEdit->setReadOnly(true);
         textEdit->setStyleSheet("background: #090C10; color: #00FF44; font-family: Consolas, monospace; font-size: 12px; border: 1px solid #1E283C;");
         textEdit->setPlainText("Waiting for connection...");
+        textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         
         layout->addWidget(label);
         layout->addWidget(textEdit);
@@ -730,9 +738,14 @@ void MainWindow::buildPageA()
     gridLayout->addWidget(c2.first, 0, 1);
     gridLayout->addWidget(c3.first, 1, 0);
     gridLayout->addWidget(c4.first, 1, 1);
+    gridLayout->setColumnStretch(0, 1);
+    gridLayout->setColumnStretch(1, 1);
+    gridLayout->setRowStretch(0, 1);
+    gridLayout->setRowStretch(1, 1);
 
     auto* controlsWidget = new QFrame(mainSplitter);
     controlsWidget->setObjectName("CyberPanelRaised");
+    controlsWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     auto* controlsLayout = new QVBoxLayout(controlsWidget);
     controlsLayout->setContentsMargins(18, 18, 18, 18);
     controlsLayout->setSpacing(12);
@@ -740,10 +753,12 @@ void MainWindow::buildPageA()
     auto* moduleLabel = new QLabel("PUBLIC WI-FI", controlsWidget);
     moduleLabel->setObjectName("KickerLabel");
     moduleLabel->setAlignment(Qt::AlignCenter);
+    moduleLabel->setWordWrap(true);
 
     auto* titleLabel = new QLabel("Estado operativo", controlsWidget);
     titleLabel->setObjectName("PanelTitle");
     titleLabel->setAlignment(Qt::AlignCenter);
+    titleLabel->setWordWrap(true);
 
     auto makeStatusRow = [controlsWidget, controlsLayout](const QString& label, const QString& objectName) {
         auto* row = new QFrame(controlsWidget);
