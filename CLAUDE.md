@@ -17,6 +17,8 @@ The current app is already refactored to the Cybershow standard:
 - Letter shortcuts for primary navigation were removed.
 - Demo mode is operator-controlled and does not auto-cycle screens.
 - A pulsing non-interactive `DEMO` watermark appears only in demo mode.
+- The runtime shell now sizes itself from the target screen in windowed mode, with a lower minimum window floor for tighter laptops and projector setups.
+- Read-only runtime widgets are no-focus so keyboard navigation stays predictable when the layout compresses.
 
 ## Operating Modes
 
@@ -100,6 +102,7 @@ The log must not include credential values or raw traffic payloads.
 - Screen 5 is scenic, terminal-based, and always ends in a controlled failure result.
 - `--config <path>` is parsed but JSON loading remains deferred.
 - `CYBERSHOW_STATUS FINISHED` is reserved for a future explicit show-finished lifecycle.
+- Keep the responsive scaling pass aligned with the current screen-aware startup and the lower minimum window size.
 
 ## Live Mode Requirements
 

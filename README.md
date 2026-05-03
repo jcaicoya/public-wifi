@@ -49,6 +49,7 @@ During execution the navigation is always operator-controlled:
 - `F10` shows or hides the `DEMO` / `LIVE` badge
 
 There are no letter-based navigation shortcuts. Demo mode does not auto-cycle screens.
+The runtime shell is screen-aware: windowed mode sizes itself from the selected display, the minimum window floor is lower than the original release, and the read-only dashboards do not take keyboard focus.
 
 ### Screen Summary
 
@@ -186,6 +187,8 @@ The app follows the Cybershow shared visual standard:
 - operable setup card
 - operative screens for dashboards, maps, logs, and analysis
 - scenic screens only where the effect is the point
+- screen-aware startup sizing and splitter weights for laptop and projector layouts
+- shared typography scaling from the selected display height
 
 The Public Wi-Fi app is the reference implementation for operative screens in the Cybershow family.
 
