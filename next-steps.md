@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 7.
+Last updated during Step 8.
 
 Completed commits through Step 4:
 
@@ -36,13 +36,17 @@ Step 6 commit:
 
 - `d67a2f3` - `Replace runtime nav with BottomNavBar`
 
-Step 7 is implemented in the working tree/next commit: common theme/background foundation.
+Step 7 commit:
+
+- `feff0b2` - `Apply Cybershow theme foundation`
+
+Step 8 is implemented in the working tree/next commit: standard setup screen.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 8: redesign setup screen to standard template.
+- The next planned refactor step is Step 9: refactor Screen 1, Centro de control.
 
 Important behavior already implemented:
 
@@ -61,6 +65,9 @@ Important behavior already implemented:
 - The app now applies the shared `CyberTheme` stylesheet globally.
 - Runtime uses `CyberBackgroundWidget` as the main window background.
 - `ScreenPage` header/content frames use standard Cyber panel object names.
+- Setup uses the common cyber background and a centered technical card.
+- Setup no longer has a fixed side mascot image.
+- Setup visible copy is now Spanish, with `INICIAR SHOW` as the primary action.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -235,6 +242,8 @@ Operator verification:
 - Visual smoke test all five screens.
 
 ## Step 8: Redesign Setup Screen To Standard Template
+
+Status: completed.
 
 Commit intent: make setup match the common Cybershow preparation screen.
 
