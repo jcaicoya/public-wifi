@@ -20,25 +20,27 @@ Phone → GL.iNet GL-MT300N-V2 (OpenWrt) → router scripts
 
 | Key | PageId | Screen |
 |-----|--------|--------|
-| 1/M | Main | Cuarzito mascot + 4 SSH consoles + router controls |
-| 2/D | Devices | Device list + raw traffic log + credential capture banner |
-| 3/N | Navigation | SVG world map (QSvgRenderer) + animated cyan packet trails |
-| 4/S | Statistics | Per-device service counts and timestamps |
-| 5/E | Encryption | Theatrical WhatsApp brute-force → always fails (E2EE) |
+| 1 | Main | Centro de control Cybershow: 4 SSH consoles, router controls, operative status |
+| 2 | Devices | Dispositivos + trafico: device list, raw router messages, portal URL, credential banner |
+| 3 | Navigation | Mapa / conexiones: SVG world map, packet trails, selected-device events |
+| 4 | Statistics | Perfil de riesgo: score, categories, risk factors, timeline, operator explanation |
+| 5 | Encryption | Analisis de cifrado: controlled brute-force demo, always fails, E2EE reassurance |
 
-Left/Right arrows cycle screens.
+Runtime navigation: `1-5`, bottom bar clicks, and Left/Right without wrapping. Letter shortcuts were removed. `Esc` returns to setup only in `--configure`.
 
 ## Key Source Files
 
 | File | Role |
 |------|------|
 | `src/ShowConfig.h` | Pure data struct: Mode (Normal/Demo) + actSequence bool |
-| `src/InitScreen.h/.cpp` | Startup QDialog — TECHNICAL SETUP (fullscreen, two-column) |
-| `src/main.cpp` | Entry: `validateResources()`, InitScreen, MainWindow |
+| `src/InitScreen.h/.cpp` | Spanish Cybershow technical setup card |
+| `src/main.cpp` | Entry: CLI mode parsing, `validateResources()`, setup/runtime loop, orchestrator status |
 | `src/MainWindow.h/.cpp` | All 5 screens, event processing, demo logic, act sequence |
 | `src/MapView.h/.cpp` | SVG map, packet animations, region highlights |
 | `src/WifiPortalServer.h/.cpp` | Minimal HTTP server (port 8080) — fake WiFi portal |
 | `src/TcpJsonLineServer.h/.cpp` | TCP server, newline-delimited JSON |
+| `src/cybershow/common/` | Shared launch, navigation, orchestrator, and operational log helpers |
+| `src/cybershow/ui/` | Shared Cybershow theme, background, panels, bottom navigation |
 | `resources/demo_events.json` | Demo event sequence (traffic + device + credential events) |
 | `resources/regions.json` | Region polygon data (editable via polygon-editor tool) |
 | `resources/services.json` | Service→Region mapping (editable via service-mapper tool) |
@@ -56,16 +58,26 @@ Left/Right arrows cycle screens.
 
 ## Demo Mode Details
 - **Init screen** selects Normal or Demo; optionally enables **Act Sequence** (unattended 7 s/screen cycle).
-- Act Sequence pauses when entering Screen E; resumes 5 s after animation completes.
+- Act Sequence pauses when entering Screen 5; resumes 5 s after animation completes.
 - `m_routerRetryTimer` stopped in Demo to prevent blocking `waitForConnected()` freezes.
 - Background devices connect/disconnect throughout the loop; DemoPhone always stays connected.
-- `demo_events.json` includes a `{"type":"credential",…}` event that triggers the Screen B reveal.
+- `demo_events.json` includes a `{"type":"credential",…}` event that triggers the Screen 2 reveal.
+
+## Runtime Modes And Protocol
+- No arguments and `--configure` open setup.
+- `--show` and `--design` skip setup and enter runtime directly.
+- `--profile live` maps to Normal/live router mode; `--profile demo` maps to Demo.
+- Stdout emits `CYBERSHOW_STATUS READY`, `CYBERSHOW_STATUS RUNNING`, `CYBERSHOW_SCREEN <n> <id>`, and startup/server `CYBERSHOW_STATUS ERROR <code>` lines.
+- Operational log path: `logs/public-wifi.log`.
+- Log format: `timestamp | public-wifi | launchMode | profile | level | component | message`.
+- Credential values and raw traffic payloads are not written to the operational log.
 
 ## Visual Design Tokens
-- Background: `#090C10` (map/main), `#202020` (lists/consoles)
-- Device: `#00FF44` cyber green  |  Packets: `#00FFFF` cyan  |  Alert: `#FF3333` red
-- Fonts: Consolas/monospace for terminals; bold for map labels
-- Target audience is non-technical — projector legibility over code elegance
+- Common Cybershow dark technical background and bottom navigation.
+- Shared panel object names: `CyberPanel`, `CyberPanelRaised`, `CyberPanelCritical`.
+- Status object names: `StatusOk`, `StatusInfo`, `StatusWarning`, `StatusError`.
+- Fonts: Consolas/monospace for terminals; Segoe UI/Inter/Arial for common UI.
+- Target audience is non-technical; projector legibility over decorative density.
 
 ## SVG Projection (virtual 1000×600 ↔ lon/lat)
 viewBox `82.992 45.607 2528.57 1238.92` — pseudo-equirectangular.

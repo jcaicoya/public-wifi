@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 15.
+Last updated during Step 16.
 
 Completed commits through Step 4:
 
@@ -66,13 +66,17 @@ Step 14 commit:
 
 - `83942f3` - `Add orchestrator protocol hooks`
 
-Step 15 is implemented in the working tree/next commit: operational logging and config follow-up documentation.
+Step 15 commit:
+
+- `4650cf0` - `Add operational logging hooks`
+
+Step 16 is implemented in the working tree/next commit: final standards pass and documentation sync.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 16: final standards pass and documentation sync.
+- The planned refactor steps are complete. Remaining work is operator-owned compile, manual validation, packaging, deploy, and any follow-up fixes found during validation.
 
 Important behavior already implemented:
 
@@ -121,6 +125,7 @@ Important behavior already implemented:
 - Operational log format is `timestamp | public-wifi | launchMode | profile | level | component | message`.
 - Credential values and raw traffic payloads are intentionally omitted from the operational log.
 - `--config <path>` remains parsed/stored but JSON config loading is explicitly deferred in docs.
+- README, CLAUDE, and APP_SPEC now reflect the refactored screen names, startup modes, navigation, protocol, logging, and known exceptions.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -504,6 +509,8 @@ Operator verification:
 
 ## Step 16: Final Standards Pass And Documentation Sync
 
+Status: completed.
+
 Commit intent: close the refactor against the checklist and update project docs.
 
 Scope:
@@ -525,3 +532,20 @@ Operator verification:
 - Compile.
 - Full manual smoke test.
 - Git commit/tag/release/deploy as needed.
+
+## Post-Refactor Operator Validation
+
+Status: operator-owned.
+
+Suggested checks:
+
+- Compile.
+- Launch with no args and confirm setup appears.
+- Launch with `--configure`, `--show`, and `--design`.
+- Launch with `--profile demo`, `--profile live`, `--fullscreen`, `--windowed`, and one invalid argument.
+- Confirm setup shortcuts: Enter, Space, Right Arrow, `1`, and `INICIAR SHOW`.
+- Confirm runtime navigation: bottom bar, `1-5`, Left/Right without wrapping, and no letter shortcuts.
+- Confirm `Esc` returns to setup only in `--configure`.
+- Inspect stdout for `CYBERSHOW_STATUS READY`, `CYBERSHOW_STATUS RUNNING`, and `CYBERSHOW_SCREEN <n> <id>`.
+- Inspect `logs/public-wifi.log` and confirm no credential values or raw traffic payloads are written.
+- Smoke test demo credential reveal, map packet trail, risk profile, encryption demo, and live router path if hardware is available.

@@ -6,24 +6,28 @@ Live stage demonstration of public Wi-Fi privacy risks. A controlled phone conne
 
 ## Current State
 
-- **Init screen** — operator selects Normal (live router) or Demo mode, with optional Act Sequence (unattended full-show cycle)
-- **Screen A** — 4 live SSH consoles (device watch, traffic, syslog, connections)
-- **Screen B** — device list + raw traffic log + **credential capture banner** (shows name/email when volunteer submits the WiFi portal form)
-- **Screen C** — SVG world map with animated packet trails from Asturias, Spain
-- **Screen D** — per-device service stats (counts, active time)
-- **Screen E** — theatrical WhatsApp brute-force attempt → always fails → E2EE reassurance
-- **WiFi Portal** — fake login page served on port 8080; captured credentials shown dramatically on Screen B
+- **Setup** — Spanish technical setup card; operator selects live/demo mode and optional Act Sequence
+- **Screen 1: Principal** — control dashboard with SSH consoles, router controls, and operative status
+- **Screen 2: Dispositivos** — connected/known devices, raw router messages, portal URL banner, and credential reveal
+- **Screen 3: Mapa** — SVG world map with animated packet trails from Asturias, Spain and destination pulse
+- **Screen 4: Riesgo** — per-device risk score, categories, factors, timeline, and operator explanation
+- **Screen 5: Cifrado** — controlled WhatsApp brute-force demonstration, always fails, then E2EE reassurance
+- **WiFi Portal** — fake login page served on port 8080; captured credentials shown dramatically on Screen 2
 - **Demo mode** — fully simulated show (no router needed), 5 background devices, Act Sequence auto-cycling
 
 ---
 
-## Next Steps
+## Refactor Status
 
-1. **Color-code traffic by service on Screen B** — BANKING=red, WHATSAPP=cyan, etc. Zero logic change, big visual impact.
-2. **Service label pulse at destination on Screen C** — currently the label flies with the packet; pulsing at the region when it lands reads better on a projector.
-3. **Danger score on Screen D** — a 0–100 risk bar computed from services seen (BANKING+VPN = high, SEARCH = low).
-4. **Smoother act sequence transitions** — brief fade between screens for unattended demo.
-5. **Sound effect on device connect** — subtle ping via QSoundEffect.
+Aligned with the Cybershow Qt standard:
+
+- No arguments behave like `--configure`; `--configure` opens setup.
+- `--show` and `--design` skip setup and enter runtime directly.
+- Setup can start the show with Enter, Space, Right Arrow, `1`, or `INICIAR SHOW`.
+- Runtime navigation uses `1-5`, Left/Right, and the common bottom navigation bar.
+- Letter shortcuts for primary navigation have been removed.
+- Runtime emits `CYBERSHOW_*` stdout protocol lines for orchestration.
+- Operational events are logged to `logs/public-wifi.log`.
 
 ---
 
@@ -80,10 +84,20 @@ The build copies Qt DLLs and the platform plugin next to the executable automati
 public_wifi.exe
 ```
 
-At the **TECHNICAL SETUP** screen choose:
+At the **Public Wi-Fi - Configuracion tecnica** screen choose:
 - **Normal** — connects to router at `192.168.8.1`
 - **Demo** — simulated show, no router needed
   - **Act Sequence** — unattended full-show cycle (7 s/screen)
+
+CLI launch modes:
+
+```text
+public_wifi.exe
+public_wifi.exe --configure
+public_wifi.exe --show --profile demo
+public_wifi.exe --design --profile demo --windowed
+public_wifi.exe --show --profile live --fullscreen
+```
 
 ---
 
@@ -91,13 +105,13 @@ At the **TECHNICAL SETUP** screen choose:
 
 | Step | Screen | Action |
 |------|--------|--------|
-| 1 | A (Main) | Launch app, select mode, press **START SHOW** |
-| 2 | B (Devices) | Ask volunteer to connect to the show Wi-Fi. Show the portal URL on screen (`http://192.168.8.X:8080`). Volunteer fills in name + email → credential banner appears |
-| 3 | C (Map) | Click the volunteer's device in the list → map shows live packet trails |
-| 4 | D (Stats) | Press `4` — show the behavioral profile built in real time |
-| 5 | E (Encryption) | Press `5` — brute-force attempt runs automatically, ends with "13.8 Billion Years" |
+| 1 | Principal | Launch app, select mode, press **INICIAR SHOW** |
+| 2 | Dispositivos | Ask volunteer to connect to the show Wi-Fi. Show the portal URL on screen (`http://192.168.8.X:8080`). Volunteer fills in name + email; the credential banner appears |
+| 3 | Mapa | Click the volunteer's device in the list; map shows live packet trails |
+| 4 | Riesgo | Press `4`; show the behavioral profile built in real time |
+| 5 | Cifrado | Press `5`; brute-force demo runs automatically and ends with the E2EE reassurance |
 
-Keyboard shortcuts: `1–5` or `M/D/N/S/E` to jump to any screen; `←/→` to cycle.
+Keyboard shortcuts: `1-5` jumps to screens. Left/Right move without wrapping. `Esc` returns to setup only when launched with `--configure`.
 
 ## Operations
 
@@ -135,7 +149,7 @@ SSH access: `ssh root@192.168.8.1` (passwordless key required).
 /root/device_watch.sh <PC_IP> 5556 &
 ```
 
-The app starts/stops these automatically via SSH when you use the buttons on Screen A (Normal mode).
+The app starts/stops these automatically via SSH when you use the buttons on Screen 1 (Normal mode).
 
 ---
 

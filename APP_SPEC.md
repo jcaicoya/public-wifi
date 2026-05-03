@@ -1,7 +1,7 @@
 # APP_SPEC - Public Wi-Fi Cybershow
 
 Version: 0.1
-Status: refactor contract for Cybershow standard v0.3.
+Status: implemented refactor contract for Cybershow standard v0.3; pending operator compile/manual validation.
 
 This file contains the app-specific contract for adapting Public Wi-Fi to the Cybershow Qt application standard. It must be read together with:
 
@@ -176,6 +176,11 @@ CYBERSHOW_STATUS ERROR <code>
 CYBERSHOW_STATUS FINISHED
 ```
 
+Implementation note:
+
+- `READY`, `RUNNING`, `SCREEN`, and relevant `ERROR` messages are implemented.
+- `FINISHED` is reserved for a future explicit show lifecycle event; normal OS/app exit is still handled by Qt.
+
 Required screen messages:
 
 ```text
@@ -281,19 +286,27 @@ Startup must fail clearly if required resources are missing or corrupted.
 
 ## 13. Refactor Checklist
 
-- [ ] CLI common launch modes implemented.
-- [ ] No arguments behave like `--configure`.
-- [ ] `--configure` starts in setup.
-- [ ] `--design` and `--show` start in execution.
-- [ ] Setup is inaccessible in `--design` and `--show`.
-- [ ] Navigation common behavior implemented.
-- [ ] Letter shortcuts removed for primary navigation.
-- [ ] Common bottom navigation implemented.
-- [ ] Common background applied.
-- [ ] Setup redesigned as a centered technical card.
-- [ ] States and labels normalized.
-- [ ] Operator-facing text translated to Spanish.
-- [ ] Minimum `CYBERSHOW_*` stdout protocol implemented.
-- [ ] Internal logging reviewed.
-- [ ] Sensitive data display reviewed.
-- [ ] Existing live/demo functionality preserved.
+- [x] CLI common launch modes implemented.
+- [x] No arguments behave like `--configure`.
+- [x] `--configure` starts in setup.
+- [x] `--design` and `--show` start in execution.
+- [x] Setup is inaccessible in `--design` and `--show`.
+- [x] Navigation common behavior implemented.
+- [x] Letter shortcuts removed for primary navigation.
+- [x] Common bottom navigation implemented.
+- [x] Common background applied.
+- [x] Setup redesigned as a centered technical card.
+- [x] States and labels normalized.
+- [x] Operator-facing text translated to Spanish.
+- [x] Minimum `CYBERSHOW_*` stdout protocol implemented.
+- [x] Internal logging reviewed.
+- [x] Sensitive data display reviewed.
+- [x] Existing live/demo functionality preserved by code review; compile/manual validation remains operator-owned.
+
+## 14. Known Exceptions And Deferred Work
+
+- `CYBERSHOW_STATUS FINISHED` is reserved but not emitted yet because the app does not currently model an explicit show-finished lifecycle separate from normal process exit.
+- `--config <path>` is parsed and retained in `ShowConfig::configPath`, but JSON config loading is deferred.
+- Router host and port values remain hardcoded to the existing show setup (`192.168.8.1`, `5555`, `5556`, `8080`) until persistent configuration is implemented.
+- Human-readable Qt diagnostics may still go through Qt's debug/warning output; stdout protocol lines are normalized with `CYBERSHOW_*`.
+- Final compile, launch-mode validation, projection check, and live router smoke tests are operator-owned.
