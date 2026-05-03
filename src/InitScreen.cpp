@@ -4,12 +4,14 @@
 #include <QAbstractSpinBox>
 #include <QComboBox>
 #include <QFrame>
+#include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSizePolicy>
+#include <QScreen>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -50,7 +52,9 @@ void InitScreen::buildUi()
 
     auto* configBox = new QFrame(background);
     configBox->setObjectName("CyberPanelRaised");
-    configBox->setMaximumWidth(760);
+    const QScreen* screen = QGuiApplication::primaryScreen();
+    const int screenWidth = screen ? screen->availableGeometry().width() : 1280;
+    configBox->setMaximumWidth(qBound(760, int(screenWidth * 0.62), 980));
     configBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     auto* configLayout = new QVBoxLayout(configBox);
