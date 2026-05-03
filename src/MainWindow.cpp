@@ -829,6 +829,7 @@ void MainWindow::buildPageB()
     m_devicesListB = new QListWidget(leftPane);
     m_devicesListB->setMinimumSize(240, 300);
     m_devicesListB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_devicesListB->setFocusPolicy(Qt::NoFocus);
 
     leftLayout->addWidget(devicesTitle);
     leftLayout->addWidget(m_devicesListB, 1);
@@ -846,6 +847,7 @@ void MainWindow::buildPageB()
     m_rawTrafficViewB = new QTextEdit(rightPane);
     m_rawTrafficViewB->setReadOnly(true);
     m_rawTrafficViewB->setAcceptRichText(true);
+    m_rawTrafficViewB->setFocusPolicy(Qt::NoFocus);
 
     rightLayout->addWidget(rawTitle);
     rightLayout->addWidget(m_rawTrafficViewB, 1);
@@ -883,6 +885,7 @@ void MainWindow::buildPageC()
     m_mapViewC = new MapView(mapPane);
     m_mapViewC->setMinimumHeight(320);
     m_mapViewC->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_mapViewC->setFocusPolicy(Qt::NoFocus);
 
     mapLayout->addWidget(mapTitle);
     mapLayout->addWidget(m_mapViewC, 1);
@@ -900,6 +903,7 @@ void MainWindow::buildPageC()
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
     m_filteredTrafficViewC->setReadOnly(true);
     m_filteredTrafficViewC->setAcceptRichText(true);
+    m_filteredTrafficViewC->setFocusPolicy(Qt::NoFocus);
 
     eventsLayout->addWidget(eventsTitle);
     eventsLayout->addWidget(m_filteredTrafficViewC, 1);
@@ -960,6 +964,7 @@ void MainWindow::buildPageD()
     m_statsPlaceholderD = new QTextEdit(m_pageD);
     m_statsPlaceholderD->setReadOnly(true);
     m_statsPlaceholderD->setAcceptRichText(true);
+    m_statsPlaceholderD->setFocusPolicy(Qt::NoFocus);
     m_statsPlaceholderD->setHtml(
         QStringLiteral("<div style='font-family:Consolas; color:#8D96A3;'>"
                        "<h2 style='color:#F2F5F8; margin-bottom:8px;'>Perfil sin datos</h2>"
