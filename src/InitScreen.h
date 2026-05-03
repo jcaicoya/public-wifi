@@ -3,9 +3,7 @@
 #include <QDialog>
 #include "ShowConfig.h"
 
-class QCheckBox;
 class QComboBox;
-class QGroupBox;
 class QKeyEvent;
 class QLabel;
 
@@ -30,6 +28,4 @@ private:
 
     QComboBox*  m_runModeCombo = nullptr;
     QLabel*     m_statusLabel  = nullptr;
-    QGroupBox*  m_demoGroup    = nullptr;
-    QCheckBox*  m_actSeqCheck  = nullptr;
 };

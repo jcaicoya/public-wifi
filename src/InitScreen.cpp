@@ -1,11 +1,9 @@
 #include "InitScreen.h"
 #include "cybershow/ui/CyberBackgroundWidget.h"
 
-#include <QCheckBox>
 #include <QAbstractSpinBox>
 #include <QComboBox>
 #include <QFrame>
-#include <QGroupBox>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
@@ -91,26 +89,6 @@ void InitScreen::buildUi()
     m_statusLabel->setWordWrap(true);
     configLayout->addWidget(m_statusLabel);
 
-    m_demoGroup = new QGroupBox("Control demo", configBox);
-    m_demoGroup->setStyleSheet(
-        "QGroupBox { color: #F2F5F8; font-weight: 800; border: 1px solid #293241;"
-        "            border-radius: 8px; margin-top: 12px; padding-top: 14px; }"
-        "QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 6px; }"
-    );
-    m_demoGroup->setVisible(false);
-    auto* demoLayout = new QVBoxLayout(m_demoGroup);
-    demoLayout->setSpacing(12);
-
-    m_actSeqCheck = new QCheckBox("Secuencia automatica", m_demoGroup);
-    demoLayout->addWidget(m_actSeqCheck);
-
-    auto* actSeqDesc = new QLabel("Recorre las pantallas sin operador y mantiene el objetivo demo.", m_demoGroup);
-    actSeqDesc->setObjectName("MutedLabel");
-    actSeqDesc->setWordWrap(true);
-    demoLayout->addWidget(actSeqDesc);
-
-    configLayout->addWidget(m_demoGroup);
-
     auto* startBtn = new QPushButton("INICIAR SHOW", configBox);
     startBtn->setObjectName("PrimaryButton");
     startBtn->setFocusPolicy(Qt::NoFocus);
@@ -129,7 +107,6 @@ void InitScreen::setConfig(const ShowConfig& config)
 {
     const bool isDemo = config.mode == ShowConfig::Mode::Demo;
     m_runModeCombo->setCurrentIndex(isDemo ? 1 : 0);
-    m_actSeqCheck->setChecked(isDemo && config.actSequence);
     onModeChanged();
 }
 
@@ -162,9 +139,8 @@ void InitScreen::keyPressEvent(QKeyEvent* event)
 void InitScreen::onModeChanged()
 {
     const bool isDemo = (m_runModeCombo->currentIndex() == 1);
-    m_demoGroup->setVisible(isDemo);
     m_statusLabel->setText(isDemo
-        ? "Modo DEMO: no requiere router. Los eventos se inyectan desde demo_events.json."
+        ? "Modo DEMO: no requiere router. Los eventos se inyectan desde demo_events.json. La navegacion la controla el operador."
         : "Modo LIVE: conecta con GL-MT300N-V2 en 192.168.8.1. El router debe estar accesible."
     );
 }
@@ -173,6 +149,5 @@ ShowConfig InitScreen::config() const
 {
     ShowConfig cfg;
     cfg.mode        = (m_runModeCombo->currentIndex() == 1) ? ShowConfig::Mode::Demo : ShowConfig::Mode::Normal;
-    cfg.actSequence = (cfg.mode == ShowConfig::Mode::Demo) && m_actSeqCheck->isChecked();
     return cfg;
 }

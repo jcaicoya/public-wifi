@@ -6,14 +6,14 @@ Live stage demonstration of public Wi-Fi privacy risks. A controlled phone conne
 
 ## Current State
 
-- **Setup** — Spanish technical setup card; operator selects live/demo mode and optional Act Sequence
+- **Setup** — Spanish technical setup card; operator selects live/demo mode
 - **Screen 1: Principal** — control dashboard with SSH consoles, router controls, and operative status
 - **Screen 2: Dispositivos** — connected/known devices, raw router messages, portal URL banner, and credential reveal
 - **Screen 3: Mapa** — SVG world map with animated packet trails from Asturias, Spain and destination pulse
 - **Screen 4: Riesgo** — per-device risk score, categories, factors, timeline, and operator explanation
 - **Screen 5: Cifrado** — controlled WhatsApp brute-force demonstration, always fails, then E2EE reassurance
 - **WiFi Portal** — fake login page served on port 8080; captured credentials shown dramatically on Screen 2
-- **Demo mode** — fully simulated show (no router needed), 5 background devices, Act Sequence auto-cycling
+- **Demo mode** — fully simulated show (no router needed), 5 background devices, operator-controlled navigation, and a pulsing `DEMO` indicator
 
 ---
 
@@ -87,7 +87,6 @@ public_wifi.exe
 At the **Public Wi-Fi - Configuracion tecnica** screen choose:
 - **Normal** — connects to router at `192.168.8.1`
 - **Demo** — simulated show, no router needed
-  - **Act Sequence** — unattended full-show cycle (7 s/screen)
 
 CLI launch modes:
 

@@ -122,7 +122,6 @@ static ShowConfig configFromLaunchOptions(const cybershow::AppLaunchOptions& opt
         }
     }
 
-    cfg.actSequence = false;
     return cfg;
 }
 
@@ -134,11 +133,9 @@ static void applyLaunchOptions(ShowConfig& cfg, const cybershow::AppLaunchOption
     if (selectedMode.mode == ShowConfig::Mode::Demo) {
         cfg.mode = ShowConfig::Mode::Demo;
         cfg.profile = "demo";
-        cfg.actSequence = selectedMode.actSequence;
     } else {
         cfg.mode = ShowConfig::Mode::Normal;
         cfg.profile = "live";
-        cfg.actSequence = false;
     }
 }
 

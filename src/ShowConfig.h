@@ -9,7 +9,6 @@ struct ShowConfig
 
     LaunchMode launchMode = LaunchMode::Configure;
     Mode mode        = Mode::Normal;
-    bool actSequence = false;   // Demo only: cycle screens unattended
 
     QString profile = "live";
     QString originalModeArgument = "--configure";

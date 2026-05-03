@@ -48,7 +48,7 @@ Target setup parameters:
 - Operating profile: `live`, `demo`, and optionally `dev`.
 - Live mode target router: GL.iNet GL-MT300N-V2 at `192.168.8.1`.
 - Demo mode source: embedded `demo_events.json`.
-- Demo option: `Act Sequence`, which cycles screens unattended.
+- Demo mode includes a non-interactive pulsing `DEMO` indicator at center-right during runtime.
 - Window mode where supported: fullscreen or windowed.
 
 Current setup parameters:
@@ -56,8 +56,7 @@ Current setup parameters:
 - Run mode combo:
   - `Normal mode`: connects to the router at `192.168.8.1`.
   - `Demo mode`: uses simulated events from `demo_events.json`.
-- Demo checkbox:
-  - `Act sequence`: cycles all screens unattended.
+- Demo mode navigation is always controlled by the operator.
 
 Target setup rules:
 
@@ -92,7 +91,7 @@ Mapping target:
 - Setup `Demo mode` maps to operating profile `demo`.
 - CLI `--profile live` maps to `ShowConfig::Mode::Normal`.
 - CLI `--profile demo` maps to `ShowConfig::Mode::Demo`.
-- `Act Sequence` is only valid for demo operation.
+- Demo operation does not provide unattended automatic screen cycling.
 
 ## 5. Demo And Live Behavior
 
@@ -103,7 +102,7 @@ Demo data:
 - Simulated traffic events.
 - Simulated credential event for the Wi-Fi portal reveal.
 - DemoPhone remains available as the stable controlled target.
-- Act Sequence cycles screens automatically and pauses during the encryption sequence.
+- Screen navigation remains operator-controlled during demo playback.
 
 Live controlled data:
 
@@ -242,9 +241,8 @@ Initial configuration scope:
 - `network.trafficPort`
 - `network.devicePort`
 - `network.portalPort`
-- `show.actSequence`
 
-Deferred configuration work is allowed if documented in `next-steps.md` and this spec.
+Deferred configuration work is allowed if documented in this spec.
 
 Deferred configuration status:
 

@@ -51,6 +51,7 @@
 #include <QProgressBar>
 #include <QPropertyAnimation>
 #include <QRandomGenerator>
+#include <QResizeEvent>
 
 #include <cmath>
 
@@ -248,6 +249,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
 {
     buildUi();
     wireNavigation();
+    setupDemoWatermark();
     qApp->installEventFilter(this);
     updateControlStatusPanel();
     goTo(PageId::Main);
@@ -357,18 +359,6 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
         });
         m_demoSyslogTimer->start(2500);
 
-        if (m_config.actSequence) {
-            m_actSequenceTimer = new QTimer(this);
-            connect(m_actSequenceTimer, &QTimer::timeout, this, [this]() {
-                constexpr int kScreenCount = 5;
-                m_actSequenceIndex = (m_actSequenceIndex + 1) % kScreenCount;
-                const auto page = static_cast<PageId>(m_actSequenceIndex);
-                if (page == PageId::Devices && m_devicesListB && m_devicesListB->count() > 0)
-                    m_devicesListB->setCurrentRow(0);
-                goTo(page);
-            });
-            m_actSequenceTimer->start(7000); // 7 s per screen
-        }
     } else {
         cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("mode"), QStringLiteral("Live router mode started"));
         m_routerRetryTimer = new QTimer(this);
@@ -405,6 +395,12 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event)
     }
 
     return QMainWindow::eventFilter(watched, event);
+}
+
+void MainWindow::resizeEvent(QResizeEvent* event)
+{
+    QMainWindow::resizeEvent(event);
+    updateDemoWatermarkGeometry();
 }
 
 void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj)
@@ -614,8 +610,10 @@ void MainWindow::processCredentialEvent(const QString& name, const QString& emai
                 "EMAIL:   %2").arg(name, email));
     m_credentialBannerB->show();
 
-    // Auto-navigate to Screen B so the audience sees the reveal
-    goTo(PageId::Devices);
+    // In live mode, show the reveal immediately. Demo navigation stays operator-controlled.
+    if (m_config.mode != ShowConfig::Mode::Demo) {
+        goTo(PageId::Devices);
+    }
 
     // Also append a note to the raw traffic view
     if (m_rawTrafficViewB) {
@@ -1150,14 +1148,6 @@ void MainWindow::updateEncryptionAnimation()
         m_hackerTerminalE->append("> Operacion abortada. El contenido no fue descifrado.\n");
         m_lockedPlaceholderE->show();
 
-        // In act sequence mode the timer was paused when we entered this screen.
-        // Give the audience 5 seconds to read the result, then resume the cycle.
-        if (m_config.actSequence && m_actSequenceTimer) {
-            QTimer::singleShot(5000, this, [this]() {
-                if (m_actSequenceTimer)
-                    m_actSequenceTimer->start(7000);
-            });
-        }
     }
     
     m_hackerTerminalE->verticalScrollBar()->setValue(m_hackerTerminalE->verticalScrollBar()->maximum());
@@ -1177,6 +1167,54 @@ void MainWindow::wireNavigation()
         goTo(PageId::Navigation);
     });
 
+}
+
+void MainWindow::setupDemoWatermark()
+{
+    if (m_config.mode != ShowConfig::Mode::Demo) {
+        return;
+    }
+
+    m_demoWatermark = new QLabel(QStringLiteral("DEMO"), this);
+    m_demoWatermark->setFocusPolicy(Qt::NoFocus);
+    m_demoWatermark->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+    m_demoWatermark->setTextInteractionFlags(Qt::NoTextInteraction);
+    m_demoWatermark->setAlignment(Qt::AlignCenter);
+    m_demoWatermark->setStyleSheet(
+        "color: white; background: transparent; font-family: Consolas, monospace; "
+        "font-size: 64px; font-weight: 900; letter-spacing: 8px;");
+
+    m_demoWatermarkOpacity = new QGraphicsOpacityEffect(m_demoWatermark);
+    m_demoWatermarkOpacity->setOpacity(0.18);
+    m_demoWatermark->setGraphicsEffect(m_demoWatermarkOpacity);
+
+    m_demoWatermarkAnim = new QPropertyAnimation(m_demoWatermarkOpacity, "opacity", this);
+    m_demoWatermarkAnim->setStartValue(0.18);
+    m_demoWatermarkAnim->setKeyValueAt(0.5, 0.92);
+    m_demoWatermarkAnim->setEndValue(0.18);
+    m_demoWatermarkAnim->setDuration(2500);
+    m_demoWatermarkAnim->setEasingCurve(QEasingCurve::InOutSine);
+    m_demoWatermarkAnim->setLoopCount(-1);
+
+    updateDemoWatermarkGeometry();
+    m_demoWatermark->show();
+    m_demoWatermark->raise();
+    m_demoWatermarkAnim->start();
+}
+
+void MainWindow::updateDemoWatermarkGeometry()
+{
+    if (!m_demoWatermark) {
+        return;
+    }
+
+    const int widthPx = 240;
+    const int heightPx = 96;
+    const int marginRight = 64;
+    const int x = qMax(0, width() - widthPx - marginRight);
+    const int y = qMax(0, (height() - heightPx) / 2);
+    m_demoWatermark->setGeometry(x, y, widthPx, heightPx);
+    m_demoWatermark->raise();
 }
 
 bool MainWindow::focusIsEditable(QWidget* focusWidget) const
@@ -1317,9 +1355,7 @@ void MainWindow::updateControlStatusPanel()
         .arg(knownDevices));
 
     if (m_config.mode == ShowConfig::Mode::Demo) {
-        m_statusWarningsLabelA->setText(m_config.actSequence
-            ? "Secuencia automatica activa"
-            : "Demo controlado sin router real");
+        m_statusWarningsLabelA->setText("Demo controlado sin router real");
     } else if (m_routerRetryTimer && m_routerRetryTimer->isActive()) {
         m_statusWarningsLabelA->setText("Esperando acceso SSH al router");
     } else {
@@ -1531,9 +1567,11 @@ void MainWindow::goTo(PageId pageId)
             QStringLiteral("INFO"),
             QStringLiteral("navigation"),
             QString("Screen changed to %1 %2").arg(screen.number).arg(screen.id));
+        if (m_demoWatermark) {
+            m_demoWatermark->raise();
+        }
 
         if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
-            if (m_actSequenceTimer) m_actSequenceTimer->stop();
             startEncryptionDemo();
         }
 
@@ -1546,6 +1584,9 @@ void MainWindow::goTo(PageId pageId)
         disconnect(m_transitionAnim, &QPropertyAnimation::finished, nullptr, nullptr);
         connect(m_transitionAnim, &QPropertyAnimation::finished, this, [this]() {
             m_transitionOverlay->hide();
+            if (m_demoWatermark) {
+                m_demoWatermark->raise();
+            }
         });
         m_transitionAnim->start();
     });

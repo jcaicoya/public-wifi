@@ -32,10 +32,10 @@ Runtime navigation: `1-5`, bottom bar clicks, and Left/Right without wrapping. L
 
 | File | Role |
 |------|------|
-| `src/ShowConfig.h` | Pure data struct: Mode (Normal/Demo) + actSequence bool |
+| `src/ShowConfig.h` | Pure data struct: launch mode, operating mode, profile, window flags |
 | `src/InitScreen.h/.cpp` | Spanish Cybershow technical setup card |
 | `src/main.cpp` | Entry: CLI mode parsing, `validateResources()`, setup/runtime loop, orchestrator status |
-| `src/MainWindow.h/.cpp` | All 5 screens, event processing, demo logic, act sequence |
+| `src/MainWindow.h/.cpp` | All 5 screens, event processing, demo logic, demo watermark |
 | `src/MapView.h/.cpp` | SVG map, packet animations, region highlights |
 | `src/WifiPortalServer.h/.cpp` | Minimal HTTP server (port 8080) — fake WiFi portal |
 | `src/TcpJsonLineServer.h/.cpp` | TCP server, newline-delimited JSON |
@@ -57,8 +57,9 @@ Runtime navigation: `1-5`, bottom bar clicks, and Left/Right without wrapping. L
 | `resources/services.json` | Filesystem |
 
 ## Demo Mode Details
-- **Init screen** selects Normal or Demo; optionally enables **Act Sequence** (unattended 7 s/screen cycle).
-- Act Sequence pauses when entering Screen 5; resumes 5 s after animation completes.
+- **Init screen** selects Normal or Demo.
+- Demo navigation is always operator-controlled; there is no automatic screen cycling.
+- Demo mode shows a non-interactive pulsing `DEMO` indicator at the center-right of the window.
 - `m_routerRetryTimer` stopped in Demo to prevent blocking `waitForConnected()` freezes.
 - Background devices connect/disconnect throughout the loop; DemoPhone always stays connected.
 - `demo_events.json` includes a `{"type":"credential",…}` event that triggers the Screen 2 reveal.

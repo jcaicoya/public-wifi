@@ -9,6 +9,7 @@
 
 class QEvent;
 class QKeyEvent;
+class QResizeEvent;
 
 class QGraphicsOpacityEffect;
 class QProgressBar;
@@ -49,6 +50,7 @@ signals:
 
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     struct DeviceStats {
@@ -79,6 +81,8 @@ private:
     void updateStatsView();
     void updateNavigationHeader();
     void updateControlStatusPanel();
+    void setupDemoWatermark();
+    void updateDemoWatermarkGeometry();
 
 private slots:
     void startRouterScripts();
@@ -91,8 +95,6 @@ private:
     ShowConfig m_config;
     cybershow::ScreenDefinitions m_screens;
     QTimer* m_routerRetryTimer  = nullptr;
-    QTimer* m_actSequenceTimer  = nullptr;
-    int     m_actSequenceIndex  = 0;
     QTimer* m_demoSyslogTimer   = nullptr;
     int     m_syslogLine        = 0;
 
@@ -100,6 +102,9 @@ private:
     BottomNavBar*         m_bottomNav         = nullptr;
     QWidget*              m_transitionOverlay = nullptr;
     QPropertyAnimation*   m_transitionAnim    = nullptr;
+    QLabel*               m_demoWatermark      = nullptr;
+    QGraphicsOpacityEffect* m_demoWatermarkOpacity = nullptr;
+    QPropertyAnimation*   m_demoWatermarkAnim  = nullptr;
 
     ScreenPage* m_pageA = nullptr;
     ScreenPage* m_pageB = nullptr;
