@@ -633,7 +633,7 @@ void MainWindow::processCredentialEvent(const QString& name, const QString& emai
 void MainWindow::buildUi()
 {
     setWindowTitle("Public Wi-Fi - Cybershow");
-    setMinimumSize(1280, 720);
+    setMinimumSize(1024, 700);
 
     auto* central = new CyberBackgroundWidget(this);
     central->setGlowIntensity(0.85);
