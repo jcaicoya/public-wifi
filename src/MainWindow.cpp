@@ -948,21 +948,38 @@ void MainWindow::buildPageD()
 
 void MainWindow::buildPageE()
 {
-    m_pageE = new ScreenPage("", "Encryption Analysis", this);
+    m_pageE = new ScreenPage("", "Analisis de cifrado", this);
 
-    m_hackerTerminalE = new QTextEdit(m_pageE);
+    auto* terminalFrame = new QFrame(m_pageE);
+    terminalFrame->setObjectName("CyberPanelRaised");
+    auto* terminalLayout = new QVBoxLayout(terminalFrame);
+    terminalLayout->setContentsMargins(16, 16, 16, 16);
+    terminalLayout->setSpacing(10);
+
+    auto* terminalTitle = new QLabel("Terminal de analisis cifrado", terminalFrame);
+    terminalTitle->setObjectName("PanelTitle");
+
+    auto* terminalNote = new QLabel("Demostracion controlada: el contenido cifrado no se descifra.", terminalFrame);
+    terminalNote->setObjectName("MutedLabel");
+
+    m_hackerTerminalE = new QTextEdit(terminalFrame);
     m_hackerTerminalE->setReadOnly(true);
-    m_hackerTerminalE->setStyleSheet("background: #090C10; color: #00FF44; font-family: Consolas, monospace; font-size: 14px; border: 1px solid #1E283C;");
-    m_hackerTerminalE->setPlainText("Waiting for target data stream...");
+    m_hackerTerminalE->setStyleSheet(
+        "background: #070A0F; color: #00FF55; font-family: Consolas, monospace; "
+        "font-size: 15px; border: 1px solid #1E3C5A; border-radius: 8px; padding: 10px;");
+    m_hackerTerminalE->setPlainText("Esperando flujo de datos del objetivo...");
+    terminalLayout->addWidget(terminalTitle);
+    terminalLayout->addWidget(terminalNote);
+    terminalLayout->addWidget(m_hackerTerminalE, 1);
     
     m_lockedPlaceholderE = new QLabel(m_pageE);
     m_lockedPlaceholderE->setAlignment(Qt::AlignCenter);
     
     // Set the reassuring text and styling
     m_lockedPlaceholderE->setText(
-        "CRITICAL ERROR: DECRYPTION FAILED\n\n"
-        "Estimated time to crack: 13.8 Billion Years\n"
-        "STATUS: END-TO-END ENCRYPTED. YOUR SECRETS ARE SAFE."
+        "ERROR CONTROLADO: DESCIFRADO FALLIDO\n\n"
+        "Tiempo estimado de ruptura: 13.8 mil millones de anos\n"
+        "ESTADO: cifrado extremo a extremo intacto. El contenido sigue protegido."
     );
     
     QFont font = m_lockedPlaceholderE->font();
@@ -971,14 +988,17 @@ void MainWindow::buildPageE()
     m_lockedPlaceholderE->setFont(font);
     
     // Use a reassuring cyan/blue border instead of angry red
-    m_lockedPlaceholderE->setStyleSheet("color: #00FFFF; background: #090C10; border: 3px solid #00FFFF; border-radius: 10px; padding: 30px;");
+    m_lockedPlaceholderE->setStyleSheet(
+        "color: #D9FBFF; background: #071014; border: 2px solid #00D1FF; "
+        "border-radius: 10px; padding: 30px;");
     m_lockedPlaceholderE->hide(); // Hidden initially
 
-    m_pageE->contentLayout()->addWidget(m_hackerTerminalE, 2);
+    m_pageE->contentLayout()->addWidget(terminalFrame, 2);
     m_pageE->contentLayout()->addSpacing(20);
     m_pageE->contentLayout()->addWidget(m_lockedPlaceholderE, 1);
 
-    auto* startDemoBtn = new QPushButton("Trigger Demo", m_pageE);
+    auto* startDemoBtn = new QPushButton("Lanzar demo", m_pageE);
+    startDemoBtn->setObjectName("PrimaryButton");
     startDemoBtn->setMinimumHeight(36);
     startDemoBtn->setFocusPolicy(Qt::NoFocus);
     m_pageE->contentLayout()->addWidget(startDemoBtn, 0, Qt::AlignRight);
@@ -1005,14 +1025,15 @@ void MainWindow::startEncryptionDemo()
 {
     m_lockedPlaceholderE->hide();
     m_hackerTerminalE->clear();
-    m_hackerTerminalE->append("> INITIATING DEEP PACKET INSPECTION\n");
+    m_hackerTerminalE->append("> INICIANDO ANALISIS DE PAQUETES CIFRADOS");
+    m_hackerTerminalE->append("> MODO: demostracion controlada, sin descifrado real\n");
 
     if (m_config.mode == ShowConfig::Mode::Demo) {
-        m_hackerTerminalE->append("> Intercepted packet from target device to whatsapp.net");
-        m_hackerTerminalE->append("> Extracting raw payload...\n");
+        m_hackerTerminalE->append("> Paquete observado desde el objetivo hacia whatsapp.net");
+        m_hackerTerminalE->append("> Extrayendo carga binaria...\n");
         m_hackerTerminalE->append(generateHexPayload(15));
-        m_hackerTerminalE->append("\n> Payload captured. Content is unreadable (Encrypted).");
-        m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
+        m_hackerTerminalE->append("\n> Carga capturada. El contenido es ilegible: cifrado activo.");
+        m_hackerTerminalE->append("> Inicializando simulacion de fuerza bruta...");
         
         m_encryptionStep = 0;
         m_bruteForceTick = 0;
@@ -1024,14 +1045,14 @@ void MainWindow::startEncryptionDemo()
         }
 
         if (targetIp.isEmpty()) {
-            m_hackerTerminalE->append("> ERROR: No target device selected.");
-            m_hackerTerminalE->append("> Please select a device on the Devices screen first.");
+            m_hackerTerminalE->append("> ERROR: no hay dispositivo objetivo seleccionado.");
+            m_hackerTerminalE->append("> Seleccione un dispositivo en la pantalla 2 primero.");
             return;
         }
 
-        m_hackerTerminalE->append(QString("> Sniffing real-time traffic for IP: %1").arg(targetIp));
-        m_hackerTerminalE->append("> Filter: Port 443 (HTTPS) / 5222 (WhatsApp)");
-        m_hackerTerminalE->append("> WAITING FOR TARGET TO SEND DATA...\n");
+        m_hackerTerminalE->append(QString("> Observando trafico en tiempo real para IP: %1").arg(targetIp));
+        m_hackerTerminalE->append("> Filtro: puerto 443 (HTTPS) / 5222 (WhatsApp)");
+        m_hackerTerminalE->append("> ESPERANDO DATOS DEL OBJETIVO...\n");
 
         if (m_sniffProc) {
             m_sniffProc->kill();
@@ -1048,15 +1069,15 @@ void MainWindow::startEncryptionDemo()
 
         connect(m_sniffProc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
             if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-                m_hackerTerminalE->append("\n> Interception complete.");
-                m_hackerTerminalE->append("> Payload captured. Content is unreadable (Encrypted).");
-                m_hackerTerminalE->append("> Initializing Brute-Force Decryption Cluster...");
+                m_hackerTerminalE->append("\n> Captura completada.");
+                m_hackerTerminalE->append("> Carga capturada. El contenido es ilegible: cifrado activo.");
+                m_hackerTerminalE->append("> Inicializando simulacion de fuerza bruta...");
                 
                 m_encryptionStep = 0;
                 m_bruteForceTick = 0;
                 m_encryptionTimer->start(50);
             } else {
-                m_hackerTerminalE->append("\n> Interception aborted or timed out.");
+                m_hackerTerminalE->append("\n> Captura cancelada o agotada por tiempo.");
             }
         });
 
@@ -1073,15 +1094,15 @@ void MainWindow::updateEncryptionAnimation()
     if (m_encryptionStep == 0) {
         // Phase 1: Rapid key injection simulation (lasts about 3 seconds)
         if (m_bruteForceTick % 2 == 0) {
-            m_hackerTerminalE->append(QString("> Injecting key stream: [%1]").arg(generateHexPayload(1).trimmed()));
+            m_hackerTerminalE->append(QString("> Probando flujo de claves: [%1]").arg(generateHexPayload(1).trimmed()));
         }
         
         m_bruteForceTick++;
         if (m_bruteForceTick > 60) {
             m_encryptionStep = 1;
             m_bruteForceTick = 0;
-            m_hackerTerminalE->append("\n> Key dictionary exhausted.");
-            m_hackerTerminalE->append("> Switching to AES-256-GCM brute-force...");
+            m_hackerTerminalE->append("\n> Diccionario de claves agotado.");
+            m_hackerTerminalE->append("> Cambiando a simulacion AES-256-GCM...");
             m_encryptionTimer->setInterval(100); // Slow down slightly for the progress bar
         }
     } 
@@ -1095,7 +1116,7 @@ void MainWindow::updateEncryptionAnimation()
             if (i < (progress / 5)) bar += "|";
             else bar += " ";
         }
-        bar += QString("] %1% - CPU LOAD: 100%").arg(progress);
+        bar += QString("] %1% - CARGA CPU: 100%").arg(progress);
         
         // Overwrite the last line by clearing and re-appending (simulates a carriage return)
         QTextCursor cursor = m_hackerTerminalE->textCursor();
@@ -1112,9 +1133,9 @@ void MainWindow::updateEncryptionAnimation()
     else if (m_encryptionStep == 2) {
         // Phase 3: The crash and the reassurance
         m_encryptionTimer->stop();
-        m_hackerTerminalE->append("\n> FATAL: Forward secrecy confirmed.");
-        m_hackerTerminalE->append("> Mathematical limits reached.");
-        m_hackerTerminalE->append("> Aborting operation.\n");
+        m_hackerTerminalE->append("\n> FALLO: secreto hacia adelante confirmado.");
+        m_hackerTerminalE->append("> Limite matematico alcanzado.");
+        m_hackerTerminalE->append("> Operacion abortada. El contenido no fue descifrado.\n");
         m_lockedPlaceholderE->show();
 
         // In act sequence mode the timer was paused when we entered this screen.

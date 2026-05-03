@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 12.
+Last updated during Step 13.
 
 Completed commits through Step 4:
 
@@ -54,13 +54,17 @@ Step 11 commit:
 
 - `2795641` - `Refactor map connections screen`
 
-Step 12 is implemented in the working tree/next commit: Screen 4 Perfil de riesgo.
+Step 12 commit:
+
+- `ffb259e` - `Refactor risk profile screen`
+
+Step 13 is implemented in the working tree/next commit: Screen 5 Analisis de cifrado.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 13: refactor Screen 5, Analisis de cifrado.
+- The next planned refactor step is Step 14: add minimal orchestrator protocol.
 
 Important behavior already implemented:
 
@@ -97,6 +101,10 @@ Important behavior already implemented:
 - Screen 4 is now titled `Perfil de riesgo`.
 - Screen 4 score label is now `PUNTUACION DE RIESGO`, with Spanish statuses `BAJO`, `MODERADO`, `ALTO`, `CRITICO`, and `SIN DATOS`.
 - Screen 4 lower panel now shows target summary, detected categories, observed services, risk factors, timeline, and operator-facing explanation from the existing stats.
+- Screen 5 is now titled `Analisis de cifrado`.
+- Screen 5 terminal and result copy are Spanish and explicitly frame the sequence as a controlled demonstration.
+- Screen 5 trigger button is now `Lanzar demo`.
+- Screen 5 still ends in the same failed decryption / E2EE reassurance outcome.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -406,6 +414,8 @@ Operator verification:
 - Manual demo traffic accumulation check.
 
 ## Step 13: Refactor Screen 5, Analisis De Cifrado
+
+Status: completed.
 
 Commit intent: make the encryption scene match the standard while keeping the theatrical failure.
 
