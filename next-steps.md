@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 9.
+Last updated during Step 10.
 
 Completed commits through Step 4:
 
@@ -30,8 +30,6 @@ Step 5 commit:
 
 - `12a4a46` - `Introduce standard screen navigation`
 
-Step 6 is implemented in the working tree/next commit: shared bottom navigation.
-
 Step 6 commit:
 
 - `d67a2f3` - `Replace runtime nav with BottomNavBar`
@@ -40,19 +38,21 @@ Step 7 commit:
 
 - `feff0b2` - `Apply Cybershow theme foundation`
 
-Step 8 is implemented in the working tree/next commit: standard setup screen.
-
 Step 8 commit:
 
 - `ceb86a9` - `Redesign setup screen`
 
-Step 9 is implemented in the working tree/next commit: Screen 1 control dashboard.
+Step 9 commit:
+
+- `22b51e9` - `Refactor control dashboard`
+
+Step 10 is implemented in the working tree/next commit: Screen 2 Dispositivos + trafico.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 10: refactor Screen 2, Dispositivos + trafico.
+- The next planned refactor step is Step 11: refactor Screen 3, Mapa / conexiones.
 
 Important behavior already implemented:
 
@@ -77,6 +77,11 @@ Important behavior already implemented:
 - Screen 1 is now titled `Centro de control Cybershow`.
 - Screen 1 console headers are translated to Spanish.
 - Screen 1 right panel now shows module mode, router state, local ports, device counts, and warnings instead of the mascot image.
+- Screen 2 is now titled `Dispositivos + trafico`.
+- Screen 2 panels are now `Dispositivos conectados / conocidos` and `Mensajes del router`.
+- Screen 2 portal URL is presented as a deliberate operator info banner.
+- Screen 2 credential reveal text is now `CREDENCIAL INTERCEPTADA`.
+- Screen 2 raw traffic rows keep the same event pipeline while adding display-only service category labels and row color accents.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -309,6 +314,8 @@ Operator verification:
 - Manual live/demo smoke test for Screen 1.
 
 ## Step 10: Refactor Screen 2, Dispositivos + Trafico
+
+Status: completed.
 
 Commit intent: improve the device and raw traffic screen without changing capture logic.
 

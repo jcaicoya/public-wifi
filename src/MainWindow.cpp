@@ -172,6 +172,34 @@ QString serviceColor(const QString& event)
     };
     return kColors.value(event, "#CCCCCC");
 }
+
+QString serviceCategoryLabel(const QString& event)
+{
+    static const QHash<QString, QString> kCategories = {
+        { "BANKING",   "CRITICO" },
+        { "VPN",       "SEGURIDAD" },
+        { "EMAIL",     "PERSONAL" },
+        { "WHATSAPP",  "MENSAJERIA" },
+        { "SOCIAL",    "SOCIAL" },
+        { "SHOPPING",  "COMPRAS" },
+        { "AMAZON",    "COMPRAS" },
+        { "MAPS",      "UBICACION" },
+        { "REGIONAL",  "UBICACION" },
+        { "LATAM",     "UBICACION" },
+        { "PACIFIC",   "UBICACION" },
+        { "VIDEO",     "OCIO" },
+        { "STREAMING", "OCIO" },
+        { "GAMING",    "OCIO" },
+        { "TELEMETRY", "FONDO" },
+        { "CDN",       "FONDO" },
+        { "MICROSOFT", "FONDO" },
+        { "APPLE",     "FONDO" },
+        { "SEARCH",    "CONSULTA" },
+        { "NEWS",      "CONSULTA" },
+    };
+    return kCategories.value(event, "TRAFICO");
+}
+
 // Synthesizes and plays a short sine-wave tone through the default audio output.
 // freq: Hz  |  durationMs: total length  |  amplitude: 0.0–1.0
 // Self-cleaning: QAudioSink + QBuffer are parented to `parent` and deleted on idle.
@@ -379,14 +407,22 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
     if (m_rawTrafficViewB) {
         const QString ts    = QDateTime::currentDateTime().toString("hh:mm:ss");
         const QString color = serviceColor(event);
+        const QString category = serviceCategoryLabel(event);
         const QString line  = event.isEmpty()
             ? QString::fromUtf8(rawLine).toHtmlEscaped()
-            : QString("<font color='%1'><b>%2</b></font>&nbsp;&nbsp;"
-                      "<font color='#CCCCCC'>%3</font>&nbsp;&nbsp;"
-                      "<font color='#555555'>%4</font>")
-              .arg(color, event, domain, ip);
+            : QString("<span style='display:inline-block; color:%1; font-weight:800;'>%2</span>"
+                      "&nbsp;<span style='color:#8D96A3;'>[%3]</span>"
+                      "&nbsp;&nbsp;<span style='color:#D8DEE8;'>%4</span>"
+                      "&nbsp;&nbsp;<span style='color:#6F7A88;'>%5</span>")
+              .arg(color,
+                   event.toHtmlEscaped(),
+                   category.toHtmlEscaped(),
+                   domain.toHtmlEscaped(),
+                   ip.toHtmlEscaped());
         m_rawTrafficViewB->append(
-            QString("<font color='#555555'>[%1]</font>&nbsp;&nbsp;%2").arg(ts, line));
+            QString("<div style='border-left:3px solid %1; padding-left:8px;'>"
+                    "<span style='color:#6F7A88;'>[%2]</span>&nbsp;&nbsp;%3</div>")
+                .arg(color, ts, line));
         m_rawTrafficViewB->verticalScrollBar()->setValue(
             m_rawTrafficViewB->verticalScrollBar()->maximum());
     }
@@ -551,8 +587,8 @@ void MainWindow::processCredentialEvent(const QString& name, const QString& emai
     if (!m_credentialBannerB) return;
 
     m_credentialBannerB->setText(
-        QString("\u26A0  CREDENTIAL INTERCEPTED  \u26A0\n\n"
-                "NAME :   %1\n"
+        QString("\u26A0  CREDENCIAL INTERCEPTADA  \u26A0\n\n"
+                "NOMBRE:  %1\n"
                 "EMAIL:   %2").arg(name, email));
     m_credentialBannerB->show();
 
@@ -562,8 +598,8 @@ void MainWindow::processCredentialEvent(const QString& name, const QString& emai
     // Also append a note to the raw traffic view
     if (m_rawTrafficViewB) {
         m_rawTrafficViewB->append(
-            QString("<font color='#FF3333'>[PORTAL] CREDENTIAL CAPTURED — %1 / %2</font>")
-            .arg(name, email));
+            QString("<font color='#FF3347'><b>[PORTAL]</b> CREDENCIAL CAPTURADA - %1 / %2</font>")
+            .arg(name.toHtmlEscaped(), email.toHtmlEscaped()));
         m_rawTrafficViewB->verticalScrollBar()->setValue(
             m_rawTrafficViewB->verticalScrollBar()->maximum());
     }
@@ -721,17 +757,17 @@ void MainWindow::buildPageA()
 
 void MainWindow::buildPageB()
 {
-    m_pageB = new ScreenPage("", "Devices + Raw Traffic", this);
+    m_pageB = new ScreenPage("", "Dispositivos + trafico", this);
 
     // --- Portal URL strip (always visible) ---
     const QString localIp = getLocalIpAddress();
     m_portalUrlLabelB = new QLabel(
-        QString("  FREE WiFi Portal  \u2192  http://%1:8080  "
-                "  (show this URL / QR to the volunteer)").arg(localIp),
+        QString("PORTAL PUBLIC WI-FI  |  http://%1:8080  |  Mostrar esta URL o QR al voluntario").arg(localIp),
         m_pageB);
     m_portalUrlLabelB->setStyleSheet(
-        "background: #0d2235; color: #00FFFF; font-family: Consolas, monospace; "
-        "font-size: 14px; padding: 8px 16px; border-bottom: 1px solid #1E3C5A;");
+        "background: rgba(13, 34, 53, 0.88); color: #00D1FF; font-family: Consolas, monospace; "
+        "font-size: 14px; font-weight: 800; padding: 10px 16px; "
+        "border: 1px solid #1E8FCC; border-radius: 8px;");
     m_portalUrlLabelB->setAlignment(Qt::AlignCenter);
 
     // --- Credential reveal banner (hidden until a credential arrives) ---
@@ -739,18 +775,22 @@ void MainWindow::buildPageB()
     m_credentialBannerB->setAlignment(Qt::AlignCenter);
     m_credentialBannerB->setWordWrap(true);
     m_credentialBannerB->setStyleSheet(
-        "background: #1a0000; color: #FF3333; font-family: Consolas, monospace; "
-        "font-size: 28px; font-weight: bold; padding: 20px; "
-        "border: 3px solid #FF3333; border-radius: 6px;");
+        "background: rgba(70, 0, 0, 0.78); color: #FFE8E8; font-family: Consolas, monospace; "
+        "font-size: 26px; font-weight: 900; padding: 18px 22px; "
+        "border: 2px solid #FF3347; border-radius: 10px;");
     m_credentialBannerB->hide();
 
     // --- Main splitter ---
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
 
-    auto* leftPane = new QWidget(splitter);
+    auto* leftPane = new QFrame(splitter);
+    leftPane->setObjectName("CyberPanelRaised");
     auto* leftLayout = new QVBoxLayout(leftPane);
+    leftLayout->setContentsMargins(16, 16, 16, 16);
+    leftLayout->setSpacing(12);
 
-    auto* devicesTitle = new QLabel("Connected / Known Devices", leftPane);
+    auto* devicesTitle = new QLabel("Dispositivos conectados / conocidos", leftPane);
+    devicesTitle->setObjectName("PanelTitle");
     QFont titleFont = devicesTitle->font();
     titleFont.setPointSize(18);
     titleFont.setBold(true);
@@ -758,15 +798,18 @@ void MainWindow::buildPageB()
 
     m_devicesListB = new QListWidget(leftPane);
     m_devicesListB->setMinimumSize(300, 400);
-    m_devicesListB->setStyleSheet("background: #202020; color: white;");
 
     leftLayout->addWidget(devicesTitle);
     leftLayout->addWidget(m_devicesListB, 1);
 
-    auto* rightPane = new QWidget(splitter);
+    auto* rightPane = new QFrame(splitter);
+    rightPane->setObjectName("CyberPanelRaised");
     auto* rightLayout = new QVBoxLayout(rightPane);
+    rightLayout->setContentsMargins(16, 16, 16, 16);
+    rightLayout->setSpacing(12);
 
-    auto* rawTitle = new QLabel("Router Messages (raw)", rightPane);
+    auto* rawTitle = new QLabel("Mensajes del router", rightPane);
+    rawTitle->setObjectName("PanelTitle");
     rawTitle->setFont(titleFont);
 
     m_rawTrafficViewB = new QTextEdit(rightPane);
