@@ -27,6 +27,13 @@
       "date": "2026-05-03T14:06:23",
       "message": "Improve Demo mode",
       "zip": "cybershow-wifi-v03.zip"
+    },
+    {
+      "version": 4,
+      "commit": "f53a570",
+      "date": "2026-05-03T19:37:15",
+      "message": "Improve Whatsapp screen",
+      "zip": "cybershow-wifi-v04.zip"
     }
   ]
 }
