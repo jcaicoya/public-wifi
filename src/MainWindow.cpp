@@ -827,7 +827,7 @@ void MainWindow::buildPageB()
     devicesTitle->setFont(titleFont);
 
     m_devicesListB = new QListWidget(leftPane);
-    m_devicesListB->setMinimumSize(240, 300);
+    m_devicesListB->setMinimumSize(220, 260);
     m_devicesListB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_devicesListB->setFocusPolicy(Qt::NoFocus);
 
@@ -883,7 +883,7 @@ void MainWindow::buildPageC()
     mapTitle->setFont(titleFont);
 
     m_mapViewC = new MapView(mapPane);
-    m_mapViewC->setMinimumHeight(320);
+    m_mapViewC->setMinimumHeight(280);
     m_mapViewC->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_mapViewC->setFocusPolicy(Qt::NoFocus);
 
@@ -923,7 +923,7 @@ void MainWindow::buildPageD()
     // --- Score panel ---
     auto* scoreFrame = new QFrame(m_pageD);
     scoreFrame->setObjectName("CyberPanelRaised");
-    scoreFrame->setMinimumHeight(180);
+    scoreFrame->setMinimumHeight(160);
     scoreFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding);
     auto* scoreLayout = new QVBoxLayout(scoreFrame);
     scoreLayout->setAlignment(Qt::AlignCenter);
@@ -1015,7 +1015,7 @@ void MainWindow::buildPageE()
     m_lockedPlaceholderE->setStyleSheet(
         "color: #D9FBFF; background: #071014; border: 3px solid #00D1FF; "
         "border-radius: 16px; padding: 72px;");
-    m_lockedPlaceholderE->setMinimumHeight(520);
+    m_lockedPlaceholderE->setMinimumHeight(440);
     m_lockedPlaceholderE->hide(); // Hidden initially
 
     m_pageE->contentLayout()->addWidget(m_hackerTerminalE, 2);
