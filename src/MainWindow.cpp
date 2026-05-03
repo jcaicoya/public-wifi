@@ -853,6 +853,8 @@ void MainWindow::buildPageB()
     // --- Main splitter ---
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
     splitter->setChildrenCollapsible(false);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 2);
 
     auto* leftPane = new QFrame(splitter);
     leftPane->setObjectName("CyberPanelRaised");
@@ -904,6 +906,8 @@ void MainWindow::buildPageC()
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
     splitter->setChildrenCollapsible(false);
+    splitter->setStretchFactor(0, 2);
+    splitter->setStretchFactor(1, 1);
 
     auto* mapPane = new QFrame(splitter);
     mapPane->setObjectName("CyberPanelRaised");
