@@ -53,11 +53,38 @@
 #include <QRandomGenerator>
 #include <QResizeEvent>
 #include <QSizePolicy>
+#include <QScreen>
 
 #include <cmath>
 
 namespace
 {
+QRect availableGeometryForConfig(const ShowConfig& config)
+{
+    const auto screens = QApplication::screens();
+    if (config.screenIndex >= 0 && config.screenIndex < screens.size()) {
+        return screens.at(config.screenIndex)->availableGeometry();
+    }
+
+    if (QScreen* screen = QApplication::primaryScreen()) {
+        return screen->availableGeometry();
+    }
+
+    return {};
+}
+
+double scenicScaleForConfig(const ShowConfig& config)
+{
+    const QRect available = availableGeometryForConfig(config);
+    if (available.isEmpty()) {
+        return 1.0;
+    }
+
+    const double widthScale = available.width() / 1440.0;
+    const double heightScale = available.height() / 900.0;
+    return qBound(0.82, qMin(widthScale, heightScale), 1.10);
+}
+
 cybershow::ScreenDefinitions publicWifiScreens()
 {
     using cybershow::ScreenKind;
@@ -993,12 +1020,17 @@ void MainWindow::buildPageD()
 void MainWindow::buildPageE()
 {
     m_pageE = new ScreenPage("", "Analisis de cifrado", this);
+    const double scenicScale = scenicScaleForConfig(m_config);
 
     m_hackerTerminalE = new QTextEdit(m_pageE);
     m_hackerTerminalE->setReadOnly(true);
-    m_hackerTerminalE->setStyleSheet(
+    const int terminalFontSize = qBound(13, int(15 * scenicScale), 18);
+    const int terminalPadding = qBound(10, int(12 * scenicScale), 18);
+    m_hackerTerminalE->setStyleSheet(QString(
         "background: #070A0F; color: #00FF55; font-family: Consolas, monospace; "
-        "font-size: 15px; border: 1px solid #1E3C5A; border-radius: 10px; padding: 12px;");
+        "font-size: %1px; border: 1px solid #1E3C5A; border-radius: 10px; padding: %2px;")
+        .arg(terminalFontSize)
+        .arg(terminalPadding));
     m_hackerTerminalE->setTextInteractionFlags(Qt::NoTextInteraction);
     m_hackerTerminalE->setFocusPolicy(Qt::NoFocus);
     m_hackerTerminalE->setPlainText("");
@@ -1007,17 +1039,24 @@ void MainWindow::buildPageE()
     m_lockedPlaceholderE->setAlignment(Qt::AlignCenter);
     m_lockedPlaceholderE->setWordWrap(true);
     m_lockedPlaceholderE->setTextFormat(Qt::RichText);
+    const int scenicTitle = qBound(72, int(84 * scenicScale), 112);
+    const int scenicBody = qBound(38, int(44 * scenicScale), 60);
+    const int scenicFooter = qBound(32, int(38 * scenicScale), 52);
+    const int scenicPadding = qBound(48, int(72 * scenicScale), 96);
+    const QString scenicHtml = QString(
+        "<div style='font-family:Consolas, monospace; color:#D9FBFF; text-align:center;'>"
+        "<div style='font-size:%1px; font-weight:900; line-height:1.0;'>DESCIFRADO FALLIDO</div>"
+        "<div style='height:20px;'></div>"
+        "<div style='font-size:%2px; font-weight:800; line-height:1.1;'>Tiempo estimado de ruptura: 13.8 mil millones de anos</div>"
+        "<div style='height:14px;'></div>"
+        "<div style='font-size:%3px; font-weight:800; line-height:1.15;'>Cifrado extremo a extremo intacto. El contenido sigue protegido.</div>"
+        "</div>")
+        .arg(scenicTitle)
+        .arg(scenicBody)
+        .arg(scenicFooter);
     
     // Set the reassuring text and styling
-    m_lockedPlaceholderE->setText(
-        "<div style='font-family:Consolas, monospace; color:#D9FBFF; text-align:center;'>"
-        "<div style='font-size:84px; font-weight:900; line-height:1.0;'>DESCIFRADO FALLIDO</div>"
-        "<div style='height:20px;'></div>"
-        "<div style='font-size:44px; font-weight:800; line-height:1.1;'>Tiempo estimado de ruptura: 13.8 mil millones de anos</div>"
-        "<div style='height:14px;'></div>"
-        "<div style='font-size:38px; font-weight:800; line-height:1.15;'>Cifrado extremo a extremo intacto. El contenido sigue protegido.</div>"
-        "</div>"
-    );
+    m_lockedPlaceholderE->setText(scenicHtml);
     
     QFont font = m_lockedPlaceholderE->font();
     font.setPointSize(20);
@@ -1028,7 +1067,7 @@ void MainWindow::buildPageE()
     // Use a reassuring cyan/blue border instead of angry red
     m_lockedPlaceholderE->setStyleSheet(
         "color: #D9FBFF; background: #071014; border: 3px solid #00D1FF; "
-        "border-radius: 16px; padding: 72px;");
+        QString("border-radius: 16px; padding: %1px;").arg(scenicPadding));
     m_lockedPlaceholderE->setMinimumHeight(440);
     m_lockedPlaceholderE->hide(); // Hidden initially
 
@@ -1254,13 +1293,16 @@ void MainWindow::wireNavigation()
 void MainWindow::setupDemoWatermark()
 {
     m_demoWatermark = new QLabel(this);
+    const double scenicScale = scenicScaleForConfig(m_config);
     m_demoWatermark->setFocusPolicy(Qt::NoFocus);
     m_demoWatermark->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_demoWatermark->setTextInteractionFlags(Qt::NoTextInteraction);
     m_demoWatermark->setAlignment(Qt::AlignCenter);
     m_demoWatermark->setStyleSheet(
         "color: white; background: transparent; font-family: Consolas, monospace; "
-        "font-size: 56px; font-weight: 900; letter-spacing: 6px;");
+        QString("font-size: %1px; font-weight: 900; letter-spacing: %2px;")
+            .arg(qBound(46, int(56 * scenicScale), 72))
+            .arg(qBound(4, int(6 * scenicScale), 8)));
 
     m_demoWatermarkOpacity = new QGraphicsOpacityEffect(m_demoWatermark);
     m_demoWatermarkOpacity->setOpacity(0.18);
