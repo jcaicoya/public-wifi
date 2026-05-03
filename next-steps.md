@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 13.
+Last updated during Step 14.
 
 Completed commits through Step 4:
 
@@ -58,13 +58,17 @@ Step 12 commit:
 
 - `ffb259e` - `Refactor risk profile screen`
 
-Step 13 is implemented in the working tree/next commit: Screen 5 Analisis de cifrado.
+Step 13 commit:
+
+- `31f61b4` - `Refactor encryption analysis screen`
+
+Step 14 is implemented in the working tree/next commit: minimal orchestrator protocol.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 14: add minimal orchestrator protocol.
+- The next planned refactor step is Step 15: add logging and configuration follow-up hooks.
 
 Important behavior already implemented:
 
@@ -105,6 +109,10 @@ Important behavior already implemented:
 - Screen 5 terminal and result copy are Spanish and explicitly frame the sequence as a controlled demonstration.
 - Screen 5 trigger button is now `Lanzar demo`.
 - Screen 5 still ends in the same failed decryption / E2EE reassurance outcome.
+- The app now emits `CYBERSHOW_STATUS READY` after successful startup validation and theme setup.
+- Runtime entry now emits `CYBERSHOW_STATUS RUNNING` after the main window is shown.
+- Screen changes now emit `CYBERSHOW_SCREEN <n> <id>` from the existing navigation switch point.
+- Startup/resource/server failures now emit `CYBERSHOW_STATUS ERROR <code>` where practical.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -439,6 +447,8 @@ Operator verification:
 - Manual encryption sequence check.
 
 ## Step 14: Add Minimal Orchestrator Protocol
+
+Status: completed.
 
 Commit intent: emit standard machine-readable runtime status without changing operation.
 

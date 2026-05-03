@@ -4,6 +4,7 @@
 #include "TcpJsonLineServer.h"
 #include "MapView.h"
 #include "WifiPortalServer.h"
+#include "cybershow/common/CyberOrchestratorProtocol.h"
 #include "cybershow/ui/BottomNavBar.h"
 #include "cybershow/ui/CyberBackgroundWidget.h"
 
@@ -289,10 +290,12 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
 
     if (!m_trafficServer->start()) {
         qWarning() << "Traffic server failed to start";
+        cybershow::OrchestratorProtocol::status("ERROR", "TRAFFIC_SERVER_START_FAILED");
     }
 
     if (!m_deviceServer->start()) {
         qWarning() << "Device server failed to start";
+        cybershow::OrchestratorProtocol::status("ERROR", "DEVICE_SERVER_START_FAILED");
     }
 
     m_portalServer = new WifiPortalServer(8080, this);
@@ -300,6 +303,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
             this, &MainWindow::processCredentialEvent);
     if (!m_portalServer->start()) {
         qWarning() << "WiFi portal server failed to start on port 8080";
+        cybershow::OrchestratorProtocol::status("ERROR", "PORTAL_SERVER_START_FAILED");
         statusBar()->showMessage("WARNING: Portal server could not start on port 8080", 5000);
     }
 
@@ -1514,6 +1518,7 @@ void MainWindow::goTo(PageId pageId)
         statusBar()->showMessage(
             QString("Pantalla %1 - %2").arg(screen.number).arg(screen.id),
             1500);
+        cybershow::OrchestratorProtocol::screen(screen.number, screen.id);
 
         if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
             if (m_actSequenceTimer) m_actSequenceTimer->stop();

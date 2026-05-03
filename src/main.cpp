@@ -12,6 +12,7 @@
 #include "InitScreen.h"
 #include "MainWindow.h"
 #include "cybershow/common/CyberAppMode.h"
+#include "cybershow/common/CyberOrchestratorProtocol.h"
 #include "cybershow/ui/CyberTheme.h"
 
 // Returns an error description, or an empty string if everything is valid.
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
     const cybershow::ParseResult launchParse =
         cybershow::parseAppLaunchOptions(QCoreApplication::arguments());
     if (!launchParse.ok) {
+        cybershow::OrchestratorProtocol::status("ERROR", "INVALID_ARGUMENTS");
         QMessageBox::critical(
             nullptr,
             "Public Wi-Fi Cybershow - Startup Error",
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
 
     const QString resourceError = validateResources();
     if (!resourceError.isEmpty()) {
+        cybershow::OrchestratorProtocol::status("ERROR", "RESOURCE_VALIDATION");
         QMessageBox::critical(
             nullptr,
             "Public Wi-Fi Cybershow — Resource Error",
@@ -207,6 +210,7 @@ int main(int argc, char *argv[])
 
     app.setStyle("Fusion");
     app.setStyleSheet(CyberTheme::globalStyleSheet());
+    cybershow::OrchestratorProtocol::status("READY");
 
     bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
     ShowConfig config = (shouldShowSetup && !launchParse.options.profileProvided)
@@ -227,6 +231,7 @@ int main(int argc, char *argv[])
         });
 
         showMainWindow(window, config);
+        cybershow::OrchestratorProtocol::status("RUNNING");
 
         const int result = app.exec();
         if (!setupRequested) {
