@@ -98,6 +98,8 @@ That script:
 5. records the release in `releases.json`
 6. creates a matching git tag
 
+The packaged zip also includes `RUNBOOK.md` for show-day live-mode operation.
+
 ## Important Source Files
 
 - `src/main.cpp` - CLI parsing, validation, startup mode handling

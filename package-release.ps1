@@ -64,6 +64,7 @@ Copy-Item "$out\plugins\platforms\qwindows.dll"                     "$staging\pl
 Copy-Item "$out\plugins\multimedia\windowsmediaplugin.dll"          "$staging\plugins\multimedia\"
 Copy-Item "$root\resources\regions.json"                            "$staging\resources\"
 Copy-Item "$root\resources\services.json"                           "$staging\resources\"
+Copy-Item "$root\RUNBOOK.md"                                        $staging
 
 # --- Zip ---
 Write-Host ">> Creating zip..."

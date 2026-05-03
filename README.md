@@ -133,6 +133,8 @@ The resulting zip is what we deploy. After packaging, push tags when needed:
 git push --tags
 ```
 
+Each zip includes `RUNBOOK.md` as the live-mode operator checklist.
+
 ## Look And Feel
 
 The app follows the Cybershow shared visual standard:
