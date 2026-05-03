@@ -658,6 +658,7 @@ void MainWindow::buildUi()
     rootLayout->addWidget(m_stack, 1);
     rootLayout->addWidget(m_bottomNav, 0);
     setCentralWidget(central);
+    setBottomNavVisible(false);
 
     buildPageA();
     buildPageB();
@@ -1292,6 +1293,20 @@ void MainWindow::setModeWatermarkVisible(bool visible)
     }
 }
 
+void MainWindow::setBottomNavVisible(bool visible)
+{
+    m_bottomNavVisible = visible;
+
+    if (!m_bottomNav) {
+        return;
+    }
+
+    m_bottomNav->setVisible(visible);
+    if (visible) {
+        m_bottomNav->raise();
+    }
+}
+
 bool MainWindow::focusIsEditable(QWidget* focusWidget) const
 {
     if (!focusWidget) return false;
@@ -1328,6 +1343,9 @@ bool MainWindow::handleRuntimeKeyPress(QKeyEvent* event)
         if (m_config.launchMode == ShowConfig::LaunchMode::Configure) {
             emit setupRequested();
         }
+        return true;
+    case Qt::Key_F9:
+        setBottomNavVisible(!m_bottomNavVisible);
         return true;
     case Qt::Key_F10:
         setModeWatermarkVisible(!m_modeWatermarkVisible);
