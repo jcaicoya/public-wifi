@@ -34,6 +34,13 @@
       "date": "2026-05-03T19:37:15",
       "message": "Improve Whatsapp screen",
       "zip": "cybershow-wifi-v04.zip"
+    },
+    {
+      "version": 5,
+      "commit": "151291c",
+      "date": "2026-05-03T20:14:51",
+      "message": "Package v05",
+      "zip": "cybershow-wifi-v05.zip"
     }
   ]
 }
