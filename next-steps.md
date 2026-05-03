@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 6.
+Last updated during Step 7.
 
 Completed commits through Step 4:
 
@@ -32,11 +32,17 @@ Step 5 commit:
 
 Step 6 is implemented in the working tree/next commit: shared bottom navigation.
 
+Step 6 commit:
+
+- `d67a2f3` - `Replace runtime nav with BottomNavBar`
+
+Step 7 is implemented in the working tree/next commit: common theme/background foundation.
+
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 7: apply common theme, background, and basic components.
+- The next planned refactor step is Step 8: redesign setup screen to standard template.
 
 Important behavior already implemented:
 
@@ -52,6 +58,9 @@ Important behavior already implemented:
 - Letter shortcuts for primary navigation have been removed.
 - Runtime uses one shared `BottomNavBar` at the window level.
 - Bottom navigation clicks use the same screen-definition indices as keyboard navigation.
+- The app now applies the shared `CyberTheme` stylesheet globally.
+- Runtime uses `CyberBackgroundWidget` as the main window background.
+- `ScreenPage` header/content frames use standard Cyber panel object names.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -202,6 +211,8 @@ Operator verification:
 - Manually check bottom bar clicks and active state.
 
 ## Step 7: Apply Common Theme, Background, And Basic Components
+
+Status: completed.
 
 Commit intent: establish the common visual foundation before detailed screen fixes.
 

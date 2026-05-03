@@ -12,23 +12,29 @@ ScreenPage::ScreenPage(const QString& screenId,
                        QWidget* parent)
     : QWidget(parent)
 {
+    setObjectName("RuntimeScreenPage");
+
     auto* rootLayout = new QVBoxLayout(this);
     rootLayout->setContentsMargins(24, 24, 24, 24);
     rootLayout->setSpacing(16);
 
     auto* headerFrame = new QFrame(this);
+    headerFrame->setObjectName("CyberPanelRaised");
     headerFrame->setFrameShape(QFrame::StyledPanel);
 
     auto* headerLayout = new QHBoxLayout(headerFrame);
     headerLayout->setContentsMargins(16, 12, 16, 12);
 
     m_idLabel = new QLabel(screenId, headerFrame);
+    m_idLabel->setObjectName("ScreenSubtitle");
     QFont idFont = m_idLabel->font();
     idFont.setPointSize(24);
     idFont.setBold(true);
     m_idLabel->setFont(idFont);
+    m_idLabel->setVisible(!screenId.isEmpty());
 
     m_titleLabel = new QLabel(title, headerFrame);
+    m_titleLabel->setObjectName("ScreenTitle");
     QFont titleFont = m_titleLabel->font();
     titleFont.setPointSize(20);
     titleFont.setBold(true);
@@ -41,6 +47,7 @@ ScreenPage::ScreenPage(const QString& screenId,
     rootLayout->addWidget(headerFrame, 0);
 
     auto* contentFrame = new QFrame(this);
+    contentFrame->setObjectName("CyberPanel");
     contentFrame->setFrameShape(QFrame::StyledPanel);
 
     m_contentLayout = new QVBoxLayout(contentFrame);

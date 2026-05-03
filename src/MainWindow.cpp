@@ -5,6 +5,7 @@
 #include "MapView.h"
 #include "WifiPortalServer.h"
 #include "cybershow/ui/BottomNavBar.h"
+#include "cybershow/ui/CyberBackgroundWidget.h"
 
 #include <QAbstractSpinBox>
 #include <QApplication>
@@ -567,7 +568,8 @@ void MainWindow::buildUi()
     setWindowTitle("Public Wi-Fi - Cybershow");
     resize(1600, 900);
 
-    auto* central = new QWidget(this);
+    auto* central = new CyberBackgroundWidget(this);
+    central->setGlowIntensity(0.85);
     auto* rootLayout = new QVBoxLayout(central);
     rootLayout->setContentsMargins(0, 0, 0, 0);
     rootLayout->setSpacing(0);

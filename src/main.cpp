@@ -12,6 +12,7 @@
 #include "InitScreen.h"
 #include "MainWindow.h"
 #include "cybershow/common/CyberAppMode.h"
+#include "cybershow/ui/CyberTheme.h"
 
 // Returns an error description, or an empty string if everything is valid.
 static QString validateResources()
@@ -205,19 +206,7 @@ int main(int argc, char *argv[])
     }
 
     app.setStyle("Fusion");
-    app.setStyleSheet(
-        "QMainWindow { background-color: #090C10; color: #FFFFFF; }"
-        "QWidget { background-color: #090C10; color: #FFFFFF; }"
-        "QPushButton {"
-        "  background-color: #1E283C; border: 1px solid #32405A;"
-        "  color: #FFFFFF; padding: 5px; border-radius: 4px;"
-        "}"
-        "QPushButton:hover { background-color: #283655; }"
-        "QPushButton:pressed { background-color: #00FF44; color: #000000; }"
-        "QListWidget { background-color: #202020; color: #FFFFFF; border: 1px solid #32405A; }"
-        "QTextEdit { background-color: #202020; color: #00FF44; font-family: Consolas; border: 1px solid #32405A; }"
-        "QLabel { color: #FFFFFF; }"
-    );
+    app.setStyleSheet(CyberTheme::globalStyleSheet());
 
     bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
     ShowConfig config = (shouldShowSetup && !launchParse.options.profileProvided)
