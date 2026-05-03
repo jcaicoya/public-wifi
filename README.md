@@ -1,160 +1,159 @@
 # Public Wi-Fi Cybershow
 
-Live stage demonstration of public Wi-Fi privacy risks. A controlled phone connects to a GL.iNet router; the app visualizes network metadata in real time for a non-technical audience. No real attacks — educational and ethical.
+Public Wi-Fi Cybershow is a Qt stage application for presenting public Wi-Fi privacy risks in a controlled, theatrical way. It visualizes router activity, device discovery, portal captures, map trails, risk scoring, and a scripted encryption analysis screen.
 
----
+The app supports two operating profiles:
 
-## Current State
+- `live`: used with the router, portal, and SSH helpers
+- `demo`: fully simulated, no router required
 
-- **Setup** — Spanish technical setup card; operator selects live/demo mode
-- **Screen 1: Principal** — control dashboard with SSH consoles, router controls, and operative status
-- **Screen 2: Dispositivos** — connected/known devices, raw router messages, portal URL banner, and credential reveal
-- **Screen 3: Mapa** — SVG world map with animated packet trails from Asturias, Spain and destination pulse
-- **Screen 4: Riesgo** — per-device risk score, categories, factors, timeline, and operator explanation
-- **Screen 5: Cifrado** — controlled WhatsApp brute-force demonstration, always fails, then E2EE reassurance
-- **WiFi Portal** — fake login page served on port 8080; captured credentials shown dramatically on Screen 2
-- **Demo mode** — fully simulated show (no router needed), 5 background devices, operator-controlled navigation, and a pulsing `DEMO` indicator
+It also supports the Cybershow launch modes:
 
----
+- no arguments or `--configure`: open Setup
+- `--show` or `--design`: skip Setup and enter runtime directly
 
-## Refactor Status
+## How To Operate It
 
-Aligned with the Cybershow Qt standard:
+### Setup
 
-- No arguments behave like `--configure`; `--configure` opens setup.
-- `--show` and `--design` skip setup and enter runtime directly.
-- Setup can start the show with Enter, Space, Right Arrow, `1`, or `INICIAR SHOW`.
-- Runtime navigation uses `1-5`, Left/Right, and the common bottom navigation bar.
-- Letter shortcuts for primary navigation have been removed.
-- Runtime emits `CYBERSHOW_*` stdout protocol lines for orchestration.
-- Operational events are logged to `logs/public-wifi.log`.
+The setup screen is used to choose the operating profile and start the show.
 
----
+Accepted controls:
 
-## Packaging a Release
+- `Enter`
+- `Space`
+- `Right Arrow`
+- `1`
+- clicking the primary button
 
-Use `package-release.ps1` to build a distributable zip and record it in `releases.json`.
+During normal setup, these actions start the show. If a text field has focus, normal editing wins and the global shortcuts do not interfere.
+
+### Runtime Navigation
+
+During execution the navigation is always operator-controlled:
+
+- `1` to `5` jump to a screen
+- `Left Arrow` and `Right Arrow` move between screens
+- clicking the bottom navigation bar changes screens
+- `Esc` returns to Setup only in `--configure`
+
+There are no letter-based navigation shortcuts. Demo mode does not auto-cycle screens.
+
+### Screen Summary
+
+1. `Principal`
+   - control dashboard
+   - SSH consoles and router status
+   - live/demo operational state
+
+2. `Dispositivos + trafico`
+   - connected and known devices
+   - raw traffic stream
+   - portal URL banner
+   - captured credential alert
+
+3. `Mapa / conexiones`
+   - world map
+   - animated packet trails
+   - selected-device traffic view
+
+4. `Perfil de riesgo`
+   - score and risk tier
+   - detected categories
+   - observed services
+   - risk factors and operator summary
+
+5. `Analisis de cifrado`
+   - controlled demo sequence
+   - terminal playback
+   - always ends in a failed-decryption reassurance
+
+Demo mode adds a non-interactive pulsing `DEMO` watermark in the center-right of the window.
+
+## Requirements And Constraints
+
+### Build And Runtime
+
+- Qt 6.7.3
+- CMake 3.28+
+- MSVC on Windows
+- Visual C++ Redistributable on target machines
+
+### Live Mode
+
+Live mode expects a private GL.iNet GL-MT300N-V2 router running the companion scripts.
+
+Required services:
+
+- SSH access to `root@192.168.8.1`
+- traffic events on port `5555`
+- device events on port `5556`
+- fake portal on port `8080`
+
+The app starts and stops the router-side helpers through SSH when the operator uses the controls on Screen 1. Live mode also expects the local machine to be reachable from the router scripts.
+
+### Demo Mode
+
+Demo mode is self-contained:
+
+- no router required
+- no SSH dependency
+- simulated devices and traffic
+- operator-controlled navigation only
+
+### Operational Constraints
+
+- The app must never show real personal data unless it is controlled, consented, or simulated.
+- Credential values and raw traffic payloads are not written to the operational log.
+- Setup is unavailable in `--show` and `--design`.
+- Screen changes and key runtime events are emitted through the Cybershow stdout protocol.
+- Operational logging goes to `logs/public-wifi.log`.
+
+## Release Packaging
+
+Use `package-release.ps1` to create a deployable zip and record the release.
 
 ```powershell
-# Standard: build + zip if the commit has changed
 .\package-release.ps1
-
-# Force repackage even if the commit is the same
 .\package-release.ps1 -Force
 ```
 
-The script:
+What the script does:
 
-1. Compares the current `HEAD` commit against the last entry in `releases.json`
-2. If different, builds the Release target and creates `dist\cybershow-wifi-vNN.zip`
-3. Appends an entry to `releases.json` (commit hash, date, message, zip name)
-4. Creates a local git tag (`v00`, `v01`, …)
+1. Checks the current `HEAD` commit against the last recorded release
+2. Builds the Release configuration
+3. Stages the executable, Qt runtime files, plugins, and runtime resources
+4. Creates `dist\cybershow-wifi-vNN.zip`
+5. Appends the release entry to `releases.json`
+6. Creates a matching git tag
 
-After packaging, push the new tag to the remote:
+The resulting zip is what we deploy. After packaging, push tags when needed:
 
 ```powershell
 git push --tags
 ```
 
-The zip in `dist\` is self-contained for Windows and includes the runtime resource files
-(`resources/regions.json`, `resources/services.json`) required at startup.
-The target machine must have the
-[Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) installed.
+## Look And Feel
 
-`dist\` is gitignored — only `releases.json` and the git tags are committed.
+The app follows the Cybershow shared visual standard:
 
-## Build
+- dark technical background
+- Spanish UI text
+- operator-first dashboards
+- common bottom navigation
+- consistent panel styling
+- monospaced terminal areas
+- operable setup card
+- operative screens for dashboards, maps, logs, and analysis
+- scenic screens only where the effect is the point
 
-Requirements: Qt 6.7.3, CMake 3.28+, MSVC (Windows).
+The Public Wi-Fi app is the reference implementation for operative screens in the Cybershow family.
 
-```bash
-# CLion: open project, build target public_wifi
-# Or manually:
-cmake -S . -B build
-cmake --build build
-```
+## Ethics
 
-The build copies Qt DLLs and the platform plugin next to the executable automatically.
+This is a controlled demonstration. It is intended for awareness, not intrusion.
 
----
-
-## Run
-
-```
-public_wifi.exe
-```
-
-At the **Public Wi-Fi - Configuracion tecnica** screen choose:
-- **Normal** — connects to router at `192.168.8.1`
-- **Demo** — simulated show, no router needed
-
-CLI launch modes:
-
-```text
-public_wifi.exe
-public_wifi.exe --configure
-public_wifi.exe --show --profile demo
-public_wifi.exe --design --profile demo --windowed
-public_wifi.exe --show --profile live --fullscreen
-```
-
----
-
-## Show Flow (operator guide)
-
-| Step | Screen | Action |
-|------|--------|--------|
-| 1 | Principal | Launch app, select mode, press **INICIAR SHOW** |
-| 2 | Dispositivos | Ask volunteer to connect to the show Wi-Fi. Show the portal URL on screen (`http://192.168.8.X:8080`). Volunteer fills in name + email; the credential banner appears |
-| 3 | Mapa | Click the volunteer's device in the list; map shows live packet trails |
-| 4 | Riesgo | Press `4`; show the behavioral profile built in real time |
-| 5 | Cifrado | Press `5`; brute-force demo runs automatically and ends with the E2EE reassurance |
-
-Keyboard shortcuts: `1-5` jumps to screens. Left/Right move without wrapping. `Esc` returns to setup only when launched with `--configure`.
-
-## Operations
-
-The app emits machine-readable `CYBERSHOW_*` lines on stdout for supervision. Human diagnostics and operational events are written separately.
-
-Operational log:
-
-```text
-logs/public-wifi.log
-```
-
-Format:
-
-```text
-timestamp | public-wifi | launchMode | profile | level | component | message
-```
-
-The log records runtime events such as startup, mode entry, screen changes, and server startup errors. Credential values and raw traffic payloads are not written to this log.
-
-Configuration follow-up:
-
-`--config <path>` is reserved and stored internally, but JSON config loading is deferred. Current runtime configuration still comes from setup controls and CLI profile/window flags.
-
----
-
-## Router Scripts (GL.iNet GL-MT300N-V2, OpenWrt)
-
-SSH access: `ssh root@192.168.8.1` (passwordless key required).
-
-```bash
-# Start traffic events (on router)
-/root/send_traffic_events.sh <PC_IP> 5555 &
-
-# Start device watch (on router)
-/root/device_watch.sh <PC_IP> 5556 &
-```
-
-The app starts/stops these automatically via SSH when you use the buttons on Screen 1 (Normal mode).
-
----
-
-## Ethical Constraints
-
-- Never inspects audience devices
-- Uses a dedicated private router
-- Only monitors the controlled show phone
-- Purpose: education and awareness
+- no real attack traffic
+- no audience device inspection
+- no uncontrolled disclosure of sensitive data
+- only the controlled show phone and the dedicated router are used

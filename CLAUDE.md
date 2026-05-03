@@ -1,107 +1,140 @@
 # CLAUDE.md — Public Wi-Fi Cybershow
 
-Educational theatrical demo of public Wi-Fi privacy risks. Controlled phone on a private GL.iNet router; Qt app visualizes metadata live for an audience. No real attacks.
+Use this file as the working context for resuming the app with Claude, Codex, or Gemini.
 
-## Stack
-- **C++23 / Qt 6.7.3** (Widgets, Network, Svg) / CMake 3.28+ / MSVC / CLion / Windows 11
-- **Qt path:** `C:/Qt/6.7.3/msvc2022_64`  |  **Build dirs:** `cmake-build-debug/`, `build/`
+## Project Snapshot
 
-## Architecture
-```
-Phone → GL.iNet GL-MT300N-V2 (OpenWrt) → router scripts
-  → port 5555  traffic events  (SEARCH, BANKING, WHATSAPP …)
-  → port 5556  device events   (connected / disconnected)
-  → port 8080  HTTP portal     (fake WiFi login — credential capture)
-  → TcpJsonLineServer / WifiPortalServer → MainWindow
-```
-**Demo mode:** replays `demo_events.json` via QTimer (600 ms/event) — identical pipeline, no router needed.
+Public Wi-Fi Cybershow is a Qt stage application for public Wi-Fi privacy storytelling. It has five runtime screens, a setup screen, live and demo operating profiles, a fake portal, a map view, a risk profile, and a scripted encryption analysis sequence.
 
-## The 5 Screens
+The current app is already refactored to the Cybershow standard:
 
-| Key | PageId | Screen |
-|-----|--------|--------|
-| 1 | Main | Centro de control Cybershow: 4 SSH consoles, router controls, operative status |
-| 2 | Devices | Dispositivos + trafico: device list, raw router messages, portal URL, credential banner |
-| 3 | Navigation | Mapa / conexiones: SVG world map, packet trails, selected-device events |
-| 4 | Statistics | Perfil de riesgo: score, categories, risk factors, timeline, operator explanation |
-| 5 | Encryption | Analisis de cifrado: controlled brute-force demo, always fails, E2EE reassurance |
+- Setup only appears in `--configure` or when no arguments are passed.
+- `--show` and `--design` skip Setup and enter runtime directly.
+- Runtime navigation uses `1-5`, arrows, and the bottom navigation bar.
+- Letter shortcuts for primary navigation were removed.
+- Demo mode is operator-controlled and does not auto-cycle screens.
+- A pulsing non-interactive `DEMO` watermark appears only in demo mode.
 
-Runtime navigation: `1-5`, bottom bar clicks, and Left/Right without wrapping. Letter shortcuts were removed. `Esc` returns to setup only in `--configure`.
+## Operating Modes
 
-## Key Source Files
+- `demo`: fully simulated, no router required
+- `live`: uses the router, SSH scripts, portal server, and incoming device/traffic events
 
-| File | Role |
-|------|------|
-| `src/ShowConfig.h` | Pure data struct: launch mode, operating mode, profile, window flags |
-| `src/InitScreen.h/.cpp` | Spanish Cybershow technical setup card |
-| `src/main.cpp` | Entry: CLI mode parsing, `validateResources()`, setup/runtime loop, orchestrator status |
-| `src/MainWindow.h/.cpp` | All 5 screens, event processing, demo logic, demo watermark |
-| `src/MapView.h/.cpp` | SVG map, packet animations, region highlights |
-| `src/WifiPortalServer.h/.cpp` | Minimal HTTP server (port 8080) — fake WiFi portal |
-| `src/TcpJsonLineServer.h/.cpp` | TCP server, newline-delimited JSON |
-| `src/cybershow/common/` | Shared launch, navigation, orchestrator, and operational log helpers |
-| `src/cybershow/ui/` | Shared Cybershow theme, background, panels, bottom navigation |
-| `resources/demo_events.json` | Demo event sequence (traffic + device + credential events) |
-| `resources/regions.json` | Region polygon data (editable via polygon-editor tool) |
-| `resources/services.json` | Service→Region mapping (editable via service-mapper tool) |
+Launch modes:
 
-## Resource Files (all required at startup)
-`validateResources()` in `main.cpp` checks all five — fatal error dialog if any missing. No hardcoded fallback data.
+- no arguments -> `--configure`
+- `--configure` -> Setup
+- `--show` -> runtime directly
+- `--design` -> runtime directly
 
-| File | Embedded? |
-|------|-----------|
-| `:/world_map.svg` | Qt resource |
-| `:/flying-cuarzito.png` | Qt resource |
-| `:/demo_events.json` | Qt resource |
-| `resources/regions.json` | Filesystem |
-| `resources/services.json` | Filesystem |
+## Screen Map
 
-## Demo Mode Details
-- **Init screen** selects Normal or Demo.
-- Demo navigation is always operator-controlled; there is no automatic screen cycling.
-- Demo mode shows a non-interactive pulsing `DEMO` indicator at the center-right of the window.
-- `m_routerRetryTimer` stopped in Demo to prevent blocking `waitForConnected()` freezes.
-- Background devices connect/disconnect throughout the loop; DemoPhone always stays connected.
-- `demo_events.json` includes a `{"type":"credential",…}` event that triggers the Screen 2 reveal.
+1. `Principal`
+   - dashboard and router control surface
+   - SSH consoles and operative status
 
-## Runtime Modes And Protocol
-- No arguments and `--configure` open setup.
-- `--show` and `--design` skip setup and enter runtime directly.
-- `--profile live` maps to Normal/live router mode; `--profile demo` maps to Demo.
-- Stdout emits `CYBERSHOW_STATUS READY`, `CYBERSHOW_STATUS RUNNING`, `CYBERSHOW_SCREEN <n> <id>`, and startup/server `CYBERSHOW_STATUS ERROR <code>` lines.
-- Operational log path: `logs/public-wifi.log`.
-- Log format: `timestamp | public-wifi | launchMode | profile | level | component | message`.
-- Credential values and raw traffic payloads are not written to the operational log.
+2. `Dispositivos + trafico`
+   - connected devices
+   - raw traffic
+   - portal URL banner
+   - captured credential reveal
 
-## Visual Design Tokens
-- Common Cybershow dark technical background and bottom navigation.
-- Shared panel object names: `CyberPanel`, `CyberPanelRaised`, `CyberPanelCritical`.
-- Status object names: `StatusOk`, `StatusInfo`, `StatusWarning`, `StatusError`.
-- Fonts: Consolas/monospace for terminals; Segoe UI/Inter/Arial for common UI.
-- Target audience is non-technical; projector legibility over decorative density.
+3. `Mapa / conexiones`
+   - world map
+   - packet trails
+   - selected-device events
 
-## SVG Projection (virtual 1000×600 ↔ lon/lat)
-viewBox `82.992 45.607 2528.57 1238.92` — pseudo-equirectangular.
-Origin: Oviedo, Asturias, Spain (`svgCoord(-5.845, 43.361)`).
+4. `Perfil de riesgo`
+   - score
+   - risk band
+   - categories
+   - services
+   - factors and operator summary
+
+5. `Analisis de cifrado`
+   - controlled terminal playback
+   - typed intro text
+   - animated brute-force phase
+   - failure result panel
+
+## Current Constraints And Expectations
+
+- Keep the current functionality unless a change is needed for navigation, startup mode, setup, or visual structure.
+- Do not reintroduce automatic Demo screen switching.
+- Do not make the demo watermark selectable or focusable.
+- Keep Screen 5 as the only screen that resets when entered.
+- Keep the beep restriction: sounds should only occur when the relevant screen is active.
+- Keep the operational log free of credential values and raw traffic payloads.
+- Keep stdout protocol lines for orchestration.
+
+## Live Mode Requirements
+
+Live mode depends on a private GL.iNet GL-MT300N-V2 router and the companion scripts.
+
+Required endpoints:
+
+- SSH: `root@192.168.8.1`
+- traffic events: port `5555`
+- device events: port `5556`
+- portal: port `8080`
+
+The app starts and stops the router-side scripts through SSH. The host must be reachable from the router for the traffic and device feeds to work.
 
 ## Packaging
 
-Script: `package-release.ps1`
-Tracking file: `releases.json` (committed to git)
-Output folder: `dist\` (gitignored)
-Zip naming: `cybershow-wifi-vNN.zip` (zero-padded, incrementing)
+Release zips are made with:
 
-Workflow:
-- `.\package-release.ps1` — builds Release, zips, appends to releases.json, creates git tag
-- `.\package-release.ps1 -Force` — same but skips commit-change check
-- `git push --tags` — push tags to remote after packaging
+```powershell
+.\package-release.ps1
+.\package-release.ps1 -Force
+```
 
-Zip contents: `public_wifi.exe` + 6 Qt DLLs (Core, Gui, Multimedia, Network, Widgets, Svg)
-+ `plugins/platforms/qwindows.dll` + `plugins/multimedia/windowsmediaplugin.dll`
-+ `resources/regions.json` + `resources/services.json` (runtime files, not embedded).
+That script:
 
-Target machine requires Visual C++ Redistributable (install once).
+1. checks the current commit against `releases.json`
+2. builds the Release target
+3. stages the executable, Qt runtime, plugins, and runtime resources
+4. creates `dist\cybershow-wifi-vNN.zip`
+5. records the release in `releases.json`
+6. creates a matching git tag
 
-## Tools (standalone Qt apps)
-- `tools/polygon-editor/` → target `polygon_editor` — edit region polygons → saves `resources/regions.json`
-- `tools/service-mapper/` → target `service_mapper` — edit service→region mapping → saves `resources/services.json`
+## Important Source Files
+
+- `src/main.cpp` - CLI parsing, validation, startup mode handling
+- `src/InitScreen.cpp` - setup screen
+- `src/MainWindow.cpp` - all five runtime screens, event flow, demo logic
+- `src/MapView.cpp` - map rendering and packet animation
+- `src/WifiPortalServer.cpp` - fake portal server
+- `src/TcpJsonLineServer.cpp` - newline-delimited JSON server
+- `src/cybershow/common/` - orchestrator protocol and operational log helpers
+- `src/cybershow/ui/` - shared Cybershow panels, background, navigation
+
+## Visual Standard Summary
+
+The app should keep the Cybershow look:
+
+- dark technical background
+- Spanish operator-facing UI
+- common bottom navigation
+- operative dashboards rather than decorative cards
+- monospaced terminals
+- clear panel hierarchy
+- screen titles and labels that fit the available space
+- scenic treatment only where the screen is meant to be theatrical
+
+Public Wi-Fi is the reference operative app in this family. The layout should stay quiet, dense, and projector-safe.
+
+## What To Check Before Any Future Change
+
+- Does it preserve current runtime behavior?
+- Does it keep setup, show, and design modes consistent with the Cybershow standard?
+- Does it break operator navigation?
+- Does it change live mode dependencies?
+- Does it alter the packaging workflow?
+- Does it add or remove a screen-level reset, beep, or demo-only behavior?
+
+## Deferred / Known Follow-Ups
+
+- No extra standards markdown files should remain after consolidation.
+- Keep the repo documentation surface small: `README.md` for user/operator documentation, `CLAUDE.md` for working context.
+- Future work should stay aligned with the current Cybershow conventions rather than reintroducing older app-specific standards docs.

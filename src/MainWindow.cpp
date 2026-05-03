@@ -1223,11 +1223,7 @@ void MainWindow::wireNavigation()
 
 void MainWindow::setupDemoWatermark()
 {
-    if (m_config.mode != ShowConfig::Mode::Demo) {
-        return;
-    }
-
-    m_demoWatermark = new QLabel(QStringLiteral("DEMO"), this);
+    m_demoWatermark = new QLabel(this);
     m_demoWatermark->setFocusPolicy(Qt::NoFocus);
     m_demoWatermark->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_demoWatermark->setTextInteractionFlags(Qt::NoTextInteraction);
@@ -1249,9 +1245,8 @@ void MainWindow::setupDemoWatermark()
     m_demoWatermarkAnim->setLoopCount(-1);
 
     updateDemoWatermarkGeometry();
-    m_demoWatermark->show();
-    m_demoWatermark->raise();
     m_demoWatermarkAnim->start();
+    setModeWatermarkVisible(false);
 }
 
 void MainWindow::updateDemoWatermarkGeometry()
@@ -1267,6 +1262,34 @@ void MainWindow::updateDemoWatermarkGeometry()
     const int y = qMax(0, (height() - heightPx) / 2);
     m_demoWatermark->setGeometry(x, y, widthPx, heightPx);
     m_demoWatermark->raise();
+}
+
+void MainWindow::updateModeWatermarkText()
+{
+    if (!m_demoWatermark) {
+        return;
+    }
+
+    m_demoWatermark->setText(m_config.mode == ShowConfig::Mode::Demo ? QStringLiteral("DEMO")
+                                                                      : QStringLiteral("LIVE"));
+}
+
+void MainWindow::setModeWatermarkVisible(bool visible)
+{
+    m_modeWatermarkVisible = visible;
+
+    if (!m_demoWatermark) {
+        return;
+    }
+
+    updateModeWatermarkText();
+    if (visible) {
+        updateDemoWatermarkGeometry();
+        m_demoWatermark->show();
+        m_demoWatermark->raise();
+    } else {
+        m_demoWatermark->hide();
+    }
 }
 
 bool MainWindow::focusIsEditable(QWidget* focusWidget) const
@@ -1305,6 +1328,9 @@ bool MainWindow::handleRuntimeKeyPress(QKeyEvent* event)
         if (m_config.launchMode == ShowConfig::LaunchMode::Configure) {
             emit setupRequested();
         }
+        return true;
+    case Qt::Key_F10:
+        setModeWatermarkVisible(!m_modeWatermarkVisible);
         return true;
     default:
         break;
@@ -1627,7 +1653,7 @@ void MainWindow::goTo(PageId pageId)
             QStringLiteral("INFO"),
             QStringLiteral("navigation"),
             QString("Screen changed to %1 %2").arg(screen.number).arg(screen.id));
-        if (m_demoWatermark) {
+        if (m_demoWatermark && m_modeWatermarkVisible) {
             m_demoWatermark->raise();
         }
 
@@ -1644,7 +1670,7 @@ void MainWindow::goTo(PageId pageId)
         disconnect(m_transitionAnim, &QPropertyAnimation::finished, nullptr, nullptr);
         connect(m_transitionAnim, &QPropertyAnimation::finished, this, [this]() {
             m_transitionOverlay->hide();
-            if (m_demoWatermark) {
+            if (m_demoWatermark && m_modeWatermarkVisible) {
                 m_demoWatermark->raise();
             }
         });

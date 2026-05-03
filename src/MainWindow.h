@@ -83,6 +83,8 @@ private:
     void updateControlStatusPanel();
     void setupDemoWatermark();
     void updateDemoWatermarkGeometry();
+    void updateModeWatermarkText();
+    void setModeWatermarkVisible(bool visible);
     void resetEncryptionScreen();
     void triggerEncryptionScreen();
     void beginEncryptionPlayback();
@@ -108,6 +110,7 @@ private:
     QLabel*               m_demoWatermark      = nullptr;
     QGraphicsOpacityEffect* m_demoWatermarkOpacity = nullptr;
     QPropertyAnimation*   m_demoWatermarkAnim  = nullptr;
+    bool                  m_modeWatermarkVisible = false;
 
     ScreenPage* m_pageA = nullptr;
     ScreenPage* m_pageB = nullptr;
