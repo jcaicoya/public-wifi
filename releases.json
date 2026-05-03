@@ -41,6 +41,13 @@
       "date": "2026-05-03T20:14:51",
       "message": "Package v05",
       "zip": "cybershow-wifi-v05.zip"
+    },
+    {
+      "version": 6,
+      "commit": "d719aef",
+      "date": "2026-05-03T20:24:25",
+      "message": "Add live runbook",
+      "zip": "cybershow-wifi-v06.zip"
     }
   ]
 }
