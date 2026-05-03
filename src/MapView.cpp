@@ -42,10 +42,13 @@ QColor serviceColor(const QString& service)
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QSizePolicy>
 
 MapView::MapView(QWidget* parent)
     : QWidget(parent)
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
     // Phone location: Oviedo, Asturias, Spain (lon=-5.845°, lat=43.361°).
     m_phonePos = svgCoord(-5.845, 43.361);
 

@@ -692,6 +692,7 @@ void MainWindow::buildPageA()
     m_pageA = new ScreenPage("", "Centro de control Cybershow", this);
 
     auto* mainSplitter = new QSplitter(Qt::Horizontal, m_pageA);
+    mainSplitter->setChildrenCollapsible(false);
 
     // Left side: 4 consoles in a grid
     auto* consolesWidget = new QWidget(mainSplitter);
@@ -791,6 +792,7 @@ void MainWindow::buildPageB()
     m_portalUrlLabelB = new QLabel(
         QString("PORTAL PUBLIC WI-FI  |  http://%1:8080  |  Mostrar esta URL o QR al voluntario").arg(localIp),
         m_pageB);
+    m_portalUrlLabelB->setWordWrap(true);
     m_portalUrlLabelB->setStyleSheet(
         "background: rgba(13, 34, 53, 0.88); color: #00D1FF; font-family: Consolas, monospace; "
         "font-size: 14px; font-weight: 800; padding: 10px 16px; "
@@ -809,6 +811,7 @@ void MainWindow::buildPageB()
 
     // --- Main splitter ---
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageB);
+    splitter->setChildrenCollapsible(false);
 
     auto* leftPane = new QFrame(splitter);
     leftPane->setObjectName("CyberPanelRaised");
@@ -862,6 +865,7 @@ void MainWindow::buildPageC()
     m_pageC = new ScreenPage("", "Sin dispositivo seleccionado", this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
+    splitter->setChildrenCollapsible(false);
 
     auto* mapPane = new QFrame(splitter);
     mapPane->setObjectName("CyberPanelRaised");
