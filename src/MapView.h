@@ -45,6 +45,7 @@ private:
     QHash<QString, QPainterPath> m_regions;
     QHash<QString, qreal>        m_regionHighlights;
     QHash<QString, QString>      m_regionLabels;    // region → last service that landed there
+    QHash<QString, int>          m_regionPulseTicks;
     QHash<QString, QString>      m_serviceToRegion;
     
     QList<MapConnection> m_connections;

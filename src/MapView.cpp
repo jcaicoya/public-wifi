@@ -66,11 +66,12 @@ MapView::MapView(QWidget* parent)
         svgData.replace("fill:#e0e0e0", "fill:none");
         svgData.replace("fill: #e0e0e0", "fill:none");
         svgData.replace("fill:#ffffff", "fill:none");
-        svgData.replace("fill: #ffffff", "fill:none");
-        svgData.replace("stroke:#ffffff", "stroke:#1a8cbf");
-        svgData.replace("stroke:#000000", "stroke:#1a8cbf");
-        svgData.replace("stroke-width:0.5", "stroke-width:3.0");
-        svgData.replace("stroke-width:0.3", "stroke-width:2.0");
+            svgData.replace("fill: #ffffff", "fill:none");
+            svgData.replace("stroke:#ffffff", "stroke:#1a8cbf");
+            svgData.replace("stroke:#000000", "stroke:#1a8cbf");
+            svgData.replace("stroke:#808080", "stroke:#1a8cbf");
+            svgData.replace("stroke-width:0.5", "stroke-width:3.0");
+            svgData.replace("stroke-width:0.3", "stroke-width:2.0");
         m_svgRenderer = new QSvgRenderer(svgData, this);
         // m_bgPixmap is built in resizeEvent / rebuildBackground() once the widget has a size.
     }
@@ -237,7 +238,18 @@ void MapView::updateAnimations()
             const QString region = m_connections[i].targetRegion;
             m_regionHighlights[region] = 1.0;
             m_regionLabels[region]     = m_connections[i].service;
+            m_regionPulseTicks[region] = 38;
             m_connections.removeAt(i);
+        }
+    }
+
+    for (auto it = m_regionPulseTicks.begin(); it != m_regionPulseTicks.end(); ) {
+        if (it.value() > 0) {
+            --it.value();
+            dirty = true;
+            ++it;
+        } else {
+            it = m_regionPulseTicks.erase(it);
         }
     }
     
@@ -268,7 +280,7 @@ void MapView::rebuildBackground()
 
     // Render SVG + grid into a single pixmap at the real widget resolution.
     m_bgPixmap = QPixmap(width(), height());
-    m_bgPixmap.fill(QColor("#090C10"));
+    m_bgPixmap.fill(QColor("#070A0F"));
 
     QPainter p(&m_bgPixmap);
     p.setRenderHint(QPainter::Antialiasing);
@@ -281,8 +293,8 @@ void MapView::rebuildBackground()
     p.translate(m_contentRect.topLeft());
     p.scale(m_contentRect.width() / 1000.0, m_contentRect.height() / 600.0);
     
-    QPen gridPen(QColor(30, 40, 60, 55));
-    gridPen.setWidthF(0.8);
+    QPen gridPen(QColor(40, 62, 88, 62));
+    gridPen.setWidthF(0.9);
     gridPen.setStyle(Qt::DotLine);
     p.setPen(gridPen);
     for (int x = 0; x <= 1000; x += 50) p.drawLine(x, 0, x, 600);
@@ -306,7 +318,7 @@ void MapView::paintEvent(QPaintEvent* event)
     if (!m_bgPixmap.isNull() && m_bgPixmap.size() == size())
         painter.drawPixmap(0, 0, m_bgPixmap);
     else
-        painter.fillRect(rect(), QColor("#090C10"));
+        painter.fillRect(rect(), QColor("#070A0F"));
 
     painter.save();
     // Translate and scale to match the centered content rect
@@ -319,25 +331,36 @@ void MapView::paintEvent(QPaintEvent* event)
     // --- Layer 3: region highlight overlays ---
     // Idle regions are fully transparent — the SVG handles the visual.
     // Polygons only appear as glowing cyan overlays when a packet arrives.
-    QFont labelFont("Consolas", 10, QFont::Bold);
+    QFont labelFont("Consolas", 11, QFont::Bold);
     painter.setFont(labelFont);
     for (auto it = m_regions.begin(); it != m_regions.end(); ++it) {
         const QString& regionName = it.key();
         const QPainterPath& path = it.value();
         qreal highlight = m_regionHighlights.value(regionName, 0.0);
+        const int pulseTicks = m_regionPulseTicks.value(regionName, 0);
 
         if (highlight > 0.0) {
-            QColor fillColor(0, 255, 255, static_cast<int>(120 * highlight));
+            QColor fillColor(0, 255, 255, static_cast<int>(135 * highlight));
             QColor edgeColor(0, 255, 255, static_cast<int>(255 * highlight));
 
             painter.setBrush(fillColor);
             QPen regionPen(edgeColor);
-            regionPen.setWidthF(2.5);
+            regionPen.setWidthF(3.2);
             painter.setPen(regionPen);
             painter.drawPath(path);
 
             const QPointF center = path.boundingRect().center();
             const QString service = m_regionLabels.value(regionName);
+
+            if (pulseTicks > 0) {
+                const qreal pulse = 1.0 - (pulseTicks / 38.0);
+                QColor pulseColor(0, 209, 255, static_cast<int>(190 * (1.0 - pulse)));
+                QPen pulsePen(pulseColor);
+                pulsePen.setWidthF(3.0);
+                painter.setBrush(Qt::NoBrush);
+                painter.setPen(pulsePen);
+                painter.drawEllipse(center, 22.0 + pulse * 44.0, 22.0 + pulse * 44.0);
+            }
 
             // Service name — large, colored, fades with highlight
             if (!service.isEmpty()) {
@@ -348,20 +371,20 @@ void MapView::paintEvent(QPaintEvent* event)
                 QColor bgColor(0, 0, 0, static_cast<int>(160 * highlight));
                 painter.setBrush(bgColor);
                 painter.setPen(Qt::NoPen);
-                painter.drawRoundedRect(QRectF(center.x() - 68, center.y() - 20, 136, 26), 4, 4);
+                painter.drawRoundedRect(QRectF(center.x() - 78, center.y() - 24, 156, 32), 5, 5);
 
-                QFont svcFont(QStringLiteral("Consolas"), 14, QFont::Bold);
+                QFont svcFont(QStringLiteral("Consolas"), 16, QFont::Bold);
                 painter.setFont(svcFont);
                 painter.setPen(svcColor);
-                painter.drawText(QRectF(center.x() - 68, center.y() - 20, 136, 26),
+                painter.drawText(QRectF(center.x() - 78, center.y() - 24, 156, 32),
                                  Qt::AlignCenter, service);
             }
 
             // Region name — small, dim, below service label
-            QFont regionFont(QStringLiteral("Consolas"), 8);
+            QFont regionFont(QStringLiteral("Consolas"), 9, QFont::DemiBold);
             painter.setFont(regionFont);
-            painter.setPen(QColor(200, 200, 200, static_cast<int>(160 * highlight)));
-            painter.drawText(QRectF(center.x() - 70, center.y() + 8, 140, 16),
+            painter.setPen(QColor(220, 230, 240, static_cast<int>(190 * highlight)));
+            painter.drawText(QRectF(center.x() - 80, center.y() + 10, 160, 18),
                              Qt::AlignCenter, regionName);
         }
     }
@@ -369,8 +392,8 @@ void MapView::paintEvent(QPaintEvent* event)
     // Draw the animated data connections
     for (const auto& conn : m_connections) {
         // Track line
-        QPen linePen(QColor(0, 255, 200, 80)); 
-        linePen.setWidthF(2.0);
+        QPen linePen(QColor(0, 209, 255, 110));
+        linePen.setWidthF(2.4);
         painter.setPen(linePen);
         painter.drawLine(conn.start, conn.end);
 
@@ -394,10 +417,10 @@ void MapView::paintEvent(QPaintEvent* event)
         
         painter.setBrush(QColor("#FFFFFF")); // Core
         painter.setPen(Qt::NoPen);
-        painter.drawEllipse(currentPos, 4, 4);
+        painter.drawEllipse(currentPos, 5, 5);
         
-        painter.setBrush(QColor(0, 255, 255, 120)); // Glow
-        painter.drawEllipse(currentPos, 8, 8);
+        painter.setBrush(QColor(0, 209, 255, 140)); // Glow
+        painter.drawEllipse(currentPos, 10, 10);
     }
 
     // Draw Fixed Phone Location (Asturias, Spain)
@@ -414,7 +437,7 @@ void MapView::paintEvent(QPaintEvent* event)
     painter.setPen(QColor(200, 255, 200));
     QFont phoneFont("Consolas", 14, QFont::Bold);
     painter.setFont(phoneFont);
-    painter.drawText(m_phonePos + QPointF(-60, 30), "ASTURIAS, SPAIN");
+    painter.drawText(m_phonePos + QPointF(-68, 32), "ASTURIAS, ESPANA");
 
     painter.restore();
 }

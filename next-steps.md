@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 10.
+Last updated during Step 11.
 
 Completed commits through Step 4:
 
@@ -46,13 +46,17 @@ Step 9 commit:
 
 - `22b51e9` - `Refactor control dashboard`
 
-Step 10 is implemented in the working tree/next commit: Screen 2 Dispositivos + trafico.
+Step 10 commit:
+
+- `fda477b` - `Refactor device traffic screen`
+
+Step 11 is implemented in the working tree/next commit: Screen 3 Mapa / conexiones.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 11: refactor Screen 3, Mapa / conexiones.
+- The next planned refactor step is Step 12: refactor Screen 4, Perfil de riesgo.
 
 Important behavior already implemented:
 
@@ -82,6 +86,10 @@ Important behavior already implemented:
 - Screen 2 portal URL is presented as a deliberate operator info banner.
 - Screen 2 credential reveal text is now `CREDENCIAL INTERCEPTADA`.
 - Screen 2 raw traffic rows keep the same event pipeline while adding display-only service category labels and row color accents.
+- Screen 3 is now titled `Mapa / conexiones`.
+- Screen 3 selected-device header now uses `OBJETIVO` and the empty state is `Sin dispositivo seleccionado`.
+- Screen 3 side panel is now `Eventos del dispositivo`.
+- Screen 3 map projection has stronger contrast, larger destination labels, and a display-only destination pulse when packets arrive.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -339,6 +347,8 @@ Operator verification:
 - Manual demo credential event check.
 
 ## Step 11: Refactor Screen 3, Mapa / Conexiones
+
+Status: completed.
 
 Commit intent: align map copy and projection legibility while preserving packet visualization.
 

@@ -475,10 +475,19 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
 
         if (selectedIp.isEmpty() || selectedIp == ip) {
             const QString color = serviceColor(event);
+            const QString category = serviceCategoryLabel(event);
+            const QString ts = QDateTime::currentDateTime().toString("hh:mm:ss");
             m_filteredTrafficViewC->append(
-                QString("<font color='%1'><b>%2</b></font>&nbsp;&nbsp;"
-                        "<font color='#CCCCCC'>%3</font>")
-                .arg(color, event, domain));
+                QString("<div style='border-left:3px solid %1; padding-left:8px;'>"
+                        "<span style='color:#6F7A88;'>[%2]</span>&nbsp;&nbsp;"
+                        "<span style='color:%1; font-weight:800;'>%3</span>"
+                        "&nbsp;<span style='color:#8D96A3;'>[%4]</span>"
+                        "&nbsp;&nbsp;<span style='color:#D8DEE8;'>%5</span></div>")
+                .arg(color,
+                     ts,
+                     event.toHtmlEscaped(),
+                     category.toHtmlEscaped(),
+                     domain.toHtmlEscaped()));
             // Auto-scroll ticker to the bottom
             m_filteredTrafficViewC->verticalScrollBar()->setValue(m_filteredTrafficViewC->verticalScrollBar()->maximum());
             
@@ -831,14 +840,18 @@ void MainWindow::buildPageB()
 
 void MainWindow::buildPageC()
 {
-    m_pageC = new ScreenPage("", "No device selected", this);
+    m_pageC = new ScreenPage("", "Sin dispositivo seleccionado", this);
 
     auto* splitter = new QSplitter(Qt::Horizontal, m_pageC);
 
-    auto* mapPane = new QWidget(splitter);
+    auto* mapPane = new QFrame(splitter);
+    mapPane->setObjectName("CyberPanelRaised");
     auto* mapLayout = new QVBoxLayout(mapPane);
+    mapLayout->setContentsMargins(16, 16, 16, 16);
+    mapLayout->setSpacing(12);
 
-    auto* mapTitle = new QLabel("Map / Connections", mapPane);
+    auto* mapTitle = new QLabel("Mapa / conexiones", mapPane);
+    mapTitle->setObjectName("PanelTitle");
     QFont titleFont = mapTitle->font();
     titleFont.setPointSize(18);
     titleFont.setBold(true);
@@ -850,10 +863,14 @@ void MainWindow::buildPageC()
     mapLayout->addWidget(mapTitle);
     mapLayout->addWidget(m_mapViewC, 1);
 
-    auto* eventsPane = new QWidget(splitter);
+    auto* eventsPane = new QFrame(splitter);
+    eventsPane->setObjectName("CyberPanelRaised");
     auto* eventsLayout = new QVBoxLayout(eventsPane);
+    eventsLayout->setContentsMargins(16, 16, 16, 16);
+    eventsLayout->setSpacing(12);
 
-    auto* eventsTitle = new QLabel("Selected Device Events", eventsPane);
+    auto* eventsTitle = new QLabel("Eventos del dispositivo", eventsPane);
+    eventsTitle->setObjectName("PanelTitle");
     eventsTitle->setFont(titleFont);
 
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
@@ -1210,9 +1227,9 @@ void MainWindow::updateNavigationHeader()
     }
 
     if (selectedIp.isEmpty()) {
-        m_pageC->setTitle("No device selected");
+        m_pageC->setTitle("Sin dispositivo seleccionado");
     } else {
-        QString title = QString("TARGET: %1 (%2)").arg(selectedName, selectedIp);
+        QString title = QString("OBJETIVO: %1 (%2)").arg(selectedName, selectedIp);
         if (!selectedMac.isEmpty()) {
             title += QString(" - MAC: %1").arg(selectedMac);
         }
