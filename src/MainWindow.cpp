@@ -988,11 +988,11 @@ void MainWindow::buildPageE()
     // Set the reassuring text and styling
     m_lockedPlaceholderE->setText(
         "<div style='font-family:Consolas, monospace; color:#D9FBFF; text-align:center;'>"
-        "<div style='font-size:104px; font-weight:900; line-height:1.0;'>DESCIFRADO FALLIDO</div>"
-        "<div style='height:28px;'></div>"
-        "<div style='font-size:54px; font-weight:800; line-height:1.1;'>Tiempo estimado de ruptura: 13.8 mil millones de anos</div>"
-        "<div style='height:18px;'></div>"
-        "<div style='font-size:48px; font-weight:800; line-height:1.15;'>Cifrado extremo a extremo intacto. El contenido sigue protegido.</div>"
+        "<div style='font-size:84px; font-weight:900; line-height:1.0;'>DESCIFRADO FALLIDO</div>"
+        "<div style='height:20px;'></div>"
+        "<div style='font-size:44px; font-weight:800; line-height:1.1;'>Tiempo estimado de ruptura: 13.8 mil millones de anos</div>"
+        "<div style='height:14px;'></div>"
+        "<div style='font-size:38px; font-weight:800; line-height:1.15;'>Cifrado extremo a extremo intacto. El contenido sigue protegido.</div>"
         "</div>"
     );
     
@@ -1006,7 +1006,7 @@ void MainWindow::buildPageE()
     m_lockedPlaceholderE->setStyleSheet(
         "color: #D9FBFF; background: #071014; border: 3px solid #00D1FF; "
         "border-radius: 16px; padding: 72px;");
-    m_lockedPlaceholderE->setMinimumHeight(720);
+    m_lockedPlaceholderE->setMinimumHeight(520);
     m_lockedPlaceholderE->hide(); // Hidden initially
 
     m_pageE->contentLayout()->addWidget(m_hackerTerminalE, 2);
@@ -1237,7 +1237,7 @@ void MainWindow::setupDemoWatermark()
     m_demoWatermark->setAlignment(Qt::AlignCenter);
     m_demoWatermark->setStyleSheet(
         "color: white; background: transparent; font-family: Consolas, monospace; "
-        "font-size: 64px; font-weight: 900; letter-spacing: 8px;");
+        "font-size: 56px; font-weight: 900; letter-spacing: 6px;");
 
     m_demoWatermarkOpacity = new QGraphicsOpacityEffect(m_demoWatermark);
     m_demoWatermarkOpacity->setOpacity(0.18);
