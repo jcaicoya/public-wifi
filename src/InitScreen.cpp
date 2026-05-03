@@ -50,8 +50,8 @@ void InitScreen::buildUi()
 
     auto* configBox = new QFrame(background);
     configBox->setObjectName("CyberPanelRaised");
-    configBox->setMaximumWidth(560);
-    configBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+    configBox->setMaximumWidth(760);
+    configBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
 
     auto* configLayout = new QVBoxLayout(configBox);
     configLayout->setContentsMargins(34, 30, 34, 34);
