@@ -52,6 +52,7 @@
 #include <QPropertyAnimation>
 #include <QRandomGenerator>
 #include <QResizeEvent>
+#include <QSizePolicy>
 
 #include <cmath>
 
@@ -632,7 +633,8 @@ void MainWindow::processCredentialEvent(const QString& name, const QString& emai
 void MainWindow::buildUi()
 {
     setWindowTitle("Public Wi-Fi - Cybershow");
-    resize(1600, 900);
+    setMinimumSize(1280, 720);
+    resize(1440, 900);
 
     auto* central = new CyberBackgroundWidget(this);
     central->setGlowIntensity(0.85);
@@ -1256,12 +1258,11 @@ void MainWindow::updateDemoWatermarkGeometry()
         return;
     }
 
-    const int widthPx = 240;
-    const int heightPx = 96;
-    const int marginRight = 64;
-    const int x = qMax(0, width() - widthPx - marginRight);
-    const int y = qMax(0, (height() - heightPx) / 2);
-    m_demoWatermark->setGeometry(x, y, widthPx, heightPx);
+    const QSize badgeSize = m_demoWatermark->sizeHint().expandedTo(QSize(200, 84));
+    const int marginRight = qMax(32, width() / 18);
+    const int x = qMax(0, width() - badgeSize.width() - marginRight);
+    const int y = qMax(0, (height() - badgeSize.height()) / 2);
+    m_demoWatermark->setGeometry(x, y, badgeSize.width(), badgeSize.height());
     m_demoWatermark->raise();
 }
 

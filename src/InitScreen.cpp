@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -49,7 +50,8 @@ void InitScreen::buildUi()
 
     auto* configBox = new QFrame(background);
     configBox->setObjectName("CyberPanelRaised");
-    configBox->setFixedWidth(560);
+    configBox->setMaximumWidth(560);
+    configBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
     auto* configLayout = new QVBoxLayout(configBox);
     configLayout->setContentsMargins(34, 30, 34, 34);
