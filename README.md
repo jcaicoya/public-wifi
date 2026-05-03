@@ -10,7 +10,16 @@ The app supports two operating profiles:
 It also supports the Cybershow launch modes:
 
 - no arguments or `--configure`: open Setup
-- `--show` or `--design`: skip Setup and enter runtime directly
+- `--demo`: skip Setup and enter runtime in demo mode
+- `--live`: skip Setup and enter runtime in live mode
+
+## Screen Contract
+
+1. `Principal` - control dashboard, SSH consoles, router status
+2. `Dispositivos + trafico` - devices, raw traffic, portal URL, credential reveal
+3. `Mapa / conexiones` - world map, packet trails, selected-device events
+4. `Perfil de riesgo` - score, categories, services, risk explanation
+5. `Analisis de cifrado` - controlled demo playback, always fails, then reassurance
 
 ## How To Operate It
 
@@ -36,6 +45,8 @@ During execution the navigation is always operator-controlled:
 - `Left Arrow` and `Right Arrow` move between screens
 - clicking the bottom navigation bar changes screens
 - `Esc` returns to Setup only in `--configure`
+- `F9` shows or hides the bottom navigation bar
+- `F10` shows or hides the `DEMO` / `LIVE` badge
 
 There are no letter-based navigation shortcuts. Demo mode does not auto-cycle screens.
 
@@ -105,9 +116,36 @@ Demo mode is self-contained:
 
 - The app must never show real personal data unless it is controlled, consented, or simulated.
 - Credential values and raw traffic payloads are not written to the operational log.
-- Setup is unavailable in `--show` and `--design`.
+- Setup is unavailable in `--demo` and `--live`.
 - Screen changes and key runtime events are emitted through the Cybershow stdout protocol.
 - Operational logging goes to `logs/public-wifi.log`.
+
+### Resources
+
+Startup requires these resources:
+
+- `:/world_map.svg`
+- `:/flying-cuarzito.png`
+- `:/demo_events.json`
+- `resources/regions.json`
+- `resources/services.json`
+
+If any required resource is missing or corrupted, startup fails clearly.
+
+### Protocol And Logging
+
+Stdout is reserved for `CYBERSHOW_*` orchestration lines where possible:
+
+- `CYBERSHOW_STATUS READY`
+- `CYBERSHOW_STATUS RUNNING`
+- `CYBERSHOW_SCREEN <n> <id>`
+- `CYBERSHOW_STATUS ERROR <code>`
+
+Operational logging uses:
+
+```text
+timestamp | public-wifi | launchMode | profile | level | component | message
+```
 
 ## Release Packaging
 

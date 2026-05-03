@@ -8,7 +8,8 @@ namespace cybershow {
 
 enum class LaunchMode {
     Configure,
-    Show
+    Demo,
+    Live
 };
 
 struct AppLaunchOptions {

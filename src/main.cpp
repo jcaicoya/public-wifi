@@ -18,9 +18,15 @@
 
 static QString launchModeName(ShowConfig::LaunchMode mode)
 {
-    return mode == ShowConfig::LaunchMode::Configure
-        ? QStringLiteral("configure")
-        : QStringLiteral("show");
+    switch (mode) {
+    case ShowConfig::LaunchMode::Configure:
+        return QStringLiteral("configure");
+    case ShowConfig::LaunchMode::Demo:
+        return QStringLiteral("demo");
+    case ShowConfig::LaunchMode::Live:
+        return QStringLiteral("live");
+    }
+    return QStringLiteral("configure");
 }
 
 // Returns an error description, or an empty string if everything is valid.
@@ -101,10 +107,6 @@ static QString validateResources()
 static ShowConfig configFromLaunchOptions(const cybershow::AppLaunchOptions& options)
 {
     ShowConfig cfg;
-    cfg.launchMode = (options.launchMode == cybershow::LaunchMode::Configure)
-        ? ShowConfig::LaunchMode::Configure
-        : ShowConfig::LaunchMode::Show;
-    cfg.profile = options.profile.toLower();
     cfg.originalModeArgument = options.originalModeArgument;
     cfg.configPath = options.configPath;
     cfg.screenIndex = options.screenIndex;
@@ -112,31 +114,21 @@ static ShowConfig configFromLaunchOptions(const cybershow::AppLaunchOptions& opt
     cfg.windowed = options.windowed;
     cfg.debug = options.debug;
 
-    if (cfg.profile == "live") {
+    if (options.launchMode == cybershow::LaunchMode::Live) {
+        cfg.launchMode = ShowConfig::LaunchMode::Live;
         cfg.mode = ShowConfig::Mode::Normal;
         cfg.profile = "live";
-    } else {
-        cfg.mode = ShowConfig::Mode::Demo;
-        if (cfg.profile != "dev") {
-            cfg.profile = "demo";
-        }
-    }
-
-    return cfg;
-}
-
-static void applyLaunchOptions(ShowConfig& cfg, const cybershow::AppLaunchOptions& options)
-{
-    const ShowConfig selectedMode = cfg;
-    cfg = configFromLaunchOptions(options);
-
-    if (selectedMode.mode == ShowConfig::Mode::Demo) {
+    } else if (options.launchMode == cybershow::LaunchMode::Demo) {
+        cfg.launchMode = ShowConfig::LaunchMode::Demo;
         cfg.mode = ShowConfig::Mode::Demo;
         cfg.profile = "demo";
     } else {
+        cfg.launchMode = ShowConfig::LaunchMode::Configure;
         cfg.mode = ShowConfig::Mode::Normal;
         cfg.profile = "live";
     }
+
+    return cfg;
 }
 
 static void placeWindowOnRequestedScreen(QWidget& window, int screenIndex)
@@ -180,7 +172,13 @@ static bool runSetup(ShowConfig& config, const cybershow::AppLaunchOptions& opti
     }
 
     config = initScreen.config();
-    applyLaunchOptions(config, options);
+    config.launchMode = ShowConfig::LaunchMode::Configure;
+    config.originalModeArgument = options.originalModeArgument;
+    config.configPath = options.configPath;
+    config.screenIndex = options.screenIndex;
+    config.fullscreen = options.fullscreen;
+    config.windowed = options.windowed;
+    config.debug = options.debug;
     return true;
 }
 
@@ -223,9 +221,7 @@ int main(int argc, char *argv[])
     cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("startup"), QStringLiteral("Application ready"));
 
     bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
-    ShowConfig config = (shouldShowSetup && !launchParse.options.profileProvided)
-        ? ShowConfig{}
-        : configFromLaunchOptions(launchParse.options);
+    ShowConfig config = shouldShowSetup ? ShowConfig{} : configFromLaunchOptions(launchParse.options);
 
     while (true) {
         if (shouldShowSetup && !runSetup(config, launchParse.options)) {

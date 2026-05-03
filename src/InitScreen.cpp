@@ -149,5 +149,6 @@ ShowConfig InitScreen::config() const
 {
     ShowConfig cfg;
     cfg.mode        = (m_runModeCombo->currentIndex() == 1) ? ShowConfig::Mode::Demo : ShowConfig::Mode::Normal;
+    cfg.profile     = (cfg.mode == ShowConfig::Mode::Demo) ? "demo" : "live";
     return cfg;
 }

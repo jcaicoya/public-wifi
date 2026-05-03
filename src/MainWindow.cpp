@@ -1423,9 +1423,18 @@ void MainWindow::updateControlStatusPanel()
     }
 
     const QString operationMode = (m_config.mode == ShowConfig::Mode::Demo) ? "DEMO" : "LIVE";
-    const QString launchMode = (m_config.launchMode == ShowConfig::LaunchMode::Configure)
-        ? "CONFIGURACION"
-        : "SHOW";
+    QString launchMode;
+    switch (m_config.launchMode) {
+    case ShowConfig::LaunchMode::Configure:
+        launchMode = "CONFIGURACION";
+        break;
+    case ShowConfig::LaunchMode::Demo:
+        launchMode = "DEMO";
+        break;
+    case ShowConfig::LaunchMode::Live:
+        launchMode = "LIVE";
+        break;
+    }
     m_statusModeLabelA->setText(QString("Public Wi-Fi | %1 | %2").arg(operationMode, launchMode));
 
     if (m_config.mode == ShowConfig::Mode::Demo) {

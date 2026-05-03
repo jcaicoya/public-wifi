@@ -5,7 +5,8 @@ namespace cybershow {
 QString launchModeToString(LaunchMode mode) {
     switch (mode) {
     case LaunchMode::Configure: return "configure";
-    case LaunchMode::Show: return "show";
+    case LaunchMode::Demo: return "demo";
+    case LaunchMode::Live: return "live";
     }
     return "unknown";
 }
@@ -22,18 +23,20 @@ ParseResult parseAppLaunchOptions(const QStringList& arguments) {
     for (int i = 1; i < arguments.size(); ++i) {
         const QString arg = arguments.at(i);
 
-        if (arg == "--configure" || arg == "--design" || arg == "--show") {
+        if (arg == "--configure" || arg == "--demo" || arg == "--live") {
             if (modeSeen) {
                 result.ok = false;
-                result.error = "Multiple launch modes provided. Use only one of --configure, --design or --show.";
+                result.error = "Multiple launch modes provided. Use only one of --configure, --demo or --live.";
                 return result;
             }
             modeSeen = true;
             result.options.originalModeArgument = arg;
             if (arg == "--configure") {
                 result.options.launchMode = LaunchMode::Configure;
+            } else if (arg == "--demo") {
+                result.options.launchMode = LaunchMode::Demo;
             } else {
-                result.options.launchMode = LaunchMode::Show;
+                result.options.launchMode = LaunchMode::Live;
             }
         } else if (arg == "--fullscreen") {
             result.options.fullscreen = true;
@@ -91,8 +94,8 @@ ParseResult parseAppLaunchOptions(const QStringList& arguments) {
         return result;
     }
 
-    if (result.options.launchMode == LaunchMode::Show) {
-        // Debug overlay and destructive development shortcuts should not be enabled in show/design.
+    if (result.options.launchMode != LaunchMode::Configure) {
+        // Debug overlay and destructive development shortcuts should not be enabled in demo/live.
         result.options.debug = false;
     }
 

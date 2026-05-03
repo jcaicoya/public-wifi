@@ -4,7 +4,7 @@
 
 struct ShowConfig
 {
-    enum class LaunchMode { Configure, Show };
+    enum class LaunchMode { Configure, Demo, Live };
     enum class Mode { Normal, Demo };
 
     LaunchMode launchMode = LaunchMode::Configure;

@@ -42,7 +42,7 @@ La contraseña debe estar guardada en la libreta operativa o en el soporte acord
 5. Lanzar la aplicación:
 
 ```powershell
-public_wifi.exe --show --profile live --fullscreen
+public_wifi.exe --live --fullscreen
 ```
 
 La aplicación debe abrir directamente la ejecución, no la pantalla de configuración.
@@ -106,7 +106,15 @@ En esta pantalla:
 - la secuencia termina en fallo controlado;
 - el resultado deja claro que el cifrado no se rompe.
 
-## 6. Comandos SSH útiles
+## 6. Atajos del operador
+
+- `1` a `5`: ir directamente a una pantalla
+- `Left Arrow` / `Right Arrow`: moverse entre pantallas
+- `F9`: mostrar u ocultar la barra inferior
+- `F10`: mostrar u ocultar el indicador `DEMO` / `LIVE`
+- `Esc`: vuelve a Setup solo en `--configure`
+
+## 7. Comandos SSH útiles
 
 Entrar al router:
 
@@ -127,7 +135,7 @@ Y, si hace falta, observar la actividad del sistema:
 logread -f
 ```
 
-## 7. Cierre del show
+## 8. Cierre del show
 
 1. Parar la app.
 2. Entrar por SSH al router si sigue activo.
@@ -136,7 +144,7 @@ logread -f
 5. Apagar el router si toca desmontaje.
 6. Desconectar la alimentación USB.
 
-## 8. Apagado recomendado
+## 9. Apagado recomendado
 
 Si se está dentro de SSH:
 
@@ -151,7 +159,7 @@ Si el equipo ya no se va a usar:
 poweroff
 ```
 
-## 9. Puntos importantes
+## 10. Puntos importantes
 
 - El modo `live` depende del router y de sus scripts.
 - El modo `demo` no necesita router.

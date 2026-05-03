@@ -9,8 +9,11 @@ Public Wi-Fi Cybershow is a Qt stage application for public Wi-Fi privacy storyt
 The current app is already refactored to the Cybershow standard:
 
 - Setup only appears in `--configure` or when no arguments are passed.
-- `--show` and `--design` skip Setup and enter runtime directly.
+- `--demo` skips Setup and enters runtime in demo mode.
+- `--live` skips Setup and enters runtime in live mode.
 - Runtime navigation uses `1-5`, arrows, and the bottom navigation bar.
+- `F9` toggles the bottom navigation bar.
+- `F10` toggles the `DEMO` / `LIVE` badge.
 - Letter shortcuts for primary navigation were removed.
 - Demo mode is operator-controlled and does not auto-cycle screens.
 - A pulsing non-interactive `DEMO` watermark appears only in demo mode.
@@ -24,8 +27,8 @@ Launch modes:
 
 - no arguments -> `--configure`
 - `--configure` -> Setup
-- `--show` -> runtime directly
-- `--design` -> runtime directly
+- `--demo` -> runtime directly in demo mode
+- `--live` -> runtime directly in live mode
 
 ## Screen Map
 
@@ -57,6 +60,33 @@ Launch modes:
    - animated brute-force phase
    - failure result panel
 
+## Runtime Contract
+
+Required resources at startup:
+
+- `:/world_map.svg`
+- `:/flying-cuarzito.png`
+- `:/demo_events.json`
+- `resources/regions.json`
+- `resources/services.json`
+
+The app must fail clearly if any required resource is missing or corrupted.
+
+Stdout protocol lines used by the orchestrator:
+
+- `CYBERSHOW_STATUS READY`
+- `CYBERSHOW_STATUS RUNNING`
+- `CYBERSHOW_SCREEN <n> <id>`
+- `CYBERSHOW_STATUS ERROR <code>`
+
+Operational log format:
+
+```text
+timestamp | public-wifi | launchMode | profile | level | component | message
+```
+
+The log must not include credential values or raw traffic payloads.
+
 ## Current Constraints And Expectations
 
 - Keep the current functionality unless a change is needed for navigation, startup mode, setup, or visual structure.
@@ -66,6 +96,10 @@ Launch modes:
 - Keep the beep restriction: sounds should only occur when the relevant screen is active.
 - Keep the operational log free of credential values and raw traffic payloads.
 - Keep stdout protocol lines for orchestration.
+- Screen 4 needs the detailed operator explanation panel below the score.
+- Screen 5 is scenic, terminal-based, and always ends in a controlled failure result.
+- `--config <path>` is parsed but JSON loading remains deferred.
+- `CYBERSHOW_STATUS FINISHED` is reserved for a future explicit show-finished lifecycle.
 
 ## Live Mode Requirements
 
