@@ -824,7 +824,8 @@ void MainWindow::buildPageB()
     devicesTitle->setFont(titleFont);
 
     m_devicesListB = new QListWidget(leftPane);
-    m_devicesListB->setMinimumSize(300, 400);
+    m_devicesListB->setMinimumSize(240, 300);
+    m_devicesListB->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     leftLayout->addWidget(devicesTitle);
     leftLayout->addWidget(m_devicesListB, 1);
@@ -876,7 +877,8 @@ void MainWindow::buildPageC()
     mapTitle->setFont(titleFont);
 
     m_mapViewC = new MapView(mapPane);
-    m_mapViewC->setMinimumHeight(400);
+    m_mapViewC->setMinimumHeight(320);
+    m_mapViewC->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     mapLayout->addWidget(mapTitle);
     mapLayout->addWidget(m_mapViewC, 1);
@@ -913,7 +915,8 @@ void MainWindow::buildPageD()
     // --- Score panel ---
     auto* scoreFrame = new QFrame(m_pageD);
     scoreFrame->setObjectName("CyberPanelRaised");
-    scoreFrame->setFixedHeight(200);
+    scoreFrame->setMinimumHeight(180);
+    scoreFrame->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::MinimumExpanding);
     auto* scoreLayout = new QVBoxLayout(scoreFrame);
     scoreLayout->setAlignment(Qt::AlignCenter);
     scoreLayout->setContentsMargins(18, 16, 18, 16);
@@ -932,7 +935,8 @@ void MainWindow::buildPageD()
     m_scoreBarD->setRange(0, 100);
     m_scoreBarD->setValue(0);
     m_scoreBarD->setTextVisible(false);
-    m_scoreBarD->setFixedHeight(18);
+    m_scoreBarD->setMinimumHeight(18);
+    m_scoreBarD->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     m_scoreBarD->setStyleSheet(
         "QProgressBar { background: #20242B; border-radius: 9px; border: none; }"
         "QProgressBar::chunk { background: #5F6B78; border-radius: 9px; }");
