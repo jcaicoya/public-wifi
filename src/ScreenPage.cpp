@@ -49,20 +49,22 @@ ScreenPage::ScreenPage(const QString& screenId,
 
     rootLayout->addWidget(contentFrame, 1);
 
-    auto* navFrame = new QFrame(this);
-    navFrame->setFrameShape(QFrame::StyledPanel);
-
-    m_navLayout = new QHBoxLayout(navFrame);
-    m_navLayout->setContentsMargins(16, 12, 16, 12);
-    m_navLayout->setSpacing(10);
-
-    rootLayout->addWidget(navFrame, 0);
-
     m_mainLayout = rootLayout;
 }
 
 QPushButton* ScreenPage::addNavButton(const QString& text)
 {
+    if (!m_navFrame) {
+        m_navFrame = new QFrame(this);
+        m_navFrame->setFrameShape(QFrame::StyledPanel);
+
+        m_navLayout = new QHBoxLayout(m_navFrame);
+        m_navLayout->setContentsMargins(16, 12, 16, 12);
+        m_navLayout->setSpacing(10);
+
+        m_mainLayout->addWidget(m_navFrame, 0);
+    }
+
     auto* button = new QPushButton(text, this);
     button->setMinimumHeight(36);
     button->setFocusPolicy(Qt::NoFocus);

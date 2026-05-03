@@ -23,6 +23,9 @@ void BottomNavBar::setCurrentIndex(int index) {
     if (index < 0 || index >= m_buttons.size()) {
         return;
     }
+    if (m_currentIndex == index) {
+        return;
+    }
 
     m_currentIndex = index;
     for (int i = 0; i < m_buttons.size(); ++i) {

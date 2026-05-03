@@ -20,6 +20,7 @@ class QLabel;
 class QPushButton;
 class QTimer;
 
+class BottomNavBar;
 class ScreenPage;
 class TcpJsonLineServer;
 class MapView;
@@ -95,6 +96,7 @@ private:
     int     m_syslogLine        = 0;
 
     QStackedWidget*       m_stack             = nullptr;
+    BottomNavBar*         m_bottomNav         = nullptr;
     QWidget*              m_transitionOverlay = nullptr;
     QPropertyAnimation*   m_transitionAnim    = nullptr;
 

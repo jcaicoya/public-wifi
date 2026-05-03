@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated after Step 5 implementation.
+Last updated during Step 6.
 
 Completed commits through Step 4:
 
@@ -26,13 +26,17 @@ Completed commits through Step 4:
 - `d583fea` - `Add standard CLI launch modes`
 - `070ea29` - `Normalize setup startup flow`
 
-Step 5 is implemented in the working tree/next commit: screen definitions and standard runtime navigation.
+Step 5 commit:
+
+- `12a4a46` - `Introduce standard screen navigation`
+
+Step 6 is implemented in the working tree/next commit: shared bottom navigation.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 6: replace bottom navigation with common `BottomNavBar`.
+- The next planned refactor step is Step 7: apply common theme, background, and basic components.
 
 Important behavior already implemented:
 
@@ -46,6 +50,8 @@ Important behavior already implemented:
 - Runtime navigation now uses screen definitions for the five standard screens.
 - Number keys `1`-`5` and Left/Right navigate without wrapping.
 - Letter shortcuts for primary navigation have been removed.
+- Runtime uses one shared `BottomNavBar` at the window level.
+- Bottom navigation clicks use the same screen-definition indices as keyboard navigation.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -172,6 +178,8 @@ Operator verification:
 - Manually check keyboard navigation.
 
 ## Step 6: Replace Bottom Navigation With Common BottomNavBar
+
+Status: completed.
 
 Commit intent: make navigation visually and behaviorally consistent with the Cybershow standard.
 

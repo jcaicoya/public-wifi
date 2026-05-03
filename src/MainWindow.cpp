@@ -4,6 +4,7 @@
 #include "TcpJsonLineServer.h"
 #include "MapView.h"
 #include "WifiPortalServer.h"
+#include "cybershow/ui/BottomNavBar.h"
 
 #include <QAbstractSpinBox>
 #include <QApplication>
@@ -566,8 +567,29 @@ void MainWindow::buildUi()
     setWindowTitle("Public Wi-Fi - Cybershow");
     resize(1600, 900);
 
-    m_stack = new QStackedWidget(this);
-    setCentralWidget(m_stack);
+    auto* central = new QWidget(this);
+    auto* rootLayout = new QVBoxLayout(central);
+    rootLayout->setContentsMargins(0, 0, 0, 0);
+    rootLayout->setSpacing(0);
+
+    m_stack = new QStackedWidget(central);
+    m_bottomNav = new BottomNavBar(central);
+
+    QStringList navLabels;
+    navLabels.reserve(m_screens.size());
+    for (const auto& screen : m_screens) {
+        if (screen.enabled) {
+            navLabels << screen.shortTitle;
+        }
+    }
+    m_bottomNav->setItems(navLabels);
+    connect(m_bottomNav, &BottomNavBar::currentIndexChanged, this, [this](int index) {
+        goTo(static_cast<PageId>(index));
+    });
+
+    rootLayout->addWidget(m_stack, 1);
+    rootLayout->addWidget(m_bottomNav, 0);
+    setCentralWidget(central);
 
     buildPageA();
     buildPageB();
@@ -671,18 +693,6 @@ void MainWindow::buildPageA()
     mainSplitter->setStretchFactor(1, 1);
 
     m_pageA->contentLayout()->addWidget(mainSplitter);
-
-    auto* toA = m_pageA->addNavButton("Main");
-    auto* toB = m_pageA->addNavButton("Devices");
-    auto* toC = m_pageA->addNavButton("Navigation");
-    auto* toD = m_pageA->addNavButton("Statistics");
-    auto* toE = m_pageA->addNavButton("Encryption");
-
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageB()
@@ -750,18 +760,6 @@ void MainWindow::buildPageB()
     m_pageB->contentLayout()->addWidget(m_portalUrlLabelB);
     m_pageB->contentLayout()->addWidget(m_credentialBannerB);
     m_pageB->contentLayout()->addWidget(splitter, 1);
-
-    auto* toA = m_pageB->addNavButton("Main");
-    auto* toB = m_pageB->addNavButton("Devices");
-    auto* toC = m_pageB->addNavButton("Navigation");
-    auto* toD = m_pageB->addNavButton("Statistics");
-    auto* toE = m_pageB->addNavButton("Encryption");
-
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageC()
@@ -804,18 +802,6 @@ void MainWindow::buildPageC()
     splitter->setStretchFactor(1, 1);
 
     m_pageC->contentLayout()->addWidget(splitter);
-
-    auto* toA = m_pageC->addNavButton("Main");
-    auto* toB = m_pageC->addNavButton("Devices");
-    auto* toC = m_pageC->addNavButton("Navigation");
-    auto* toD = m_pageC->addNavButton("Statistics");
-    auto* toE = m_pageC->addNavButton("Encryption");
-
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageD()
@@ -871,18 +857,6 @@ void MainWindow::buildPageD()
 
     m_pageD->contentLayout()->addWidget(scoreFrame);
     m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
-
-    auto* toA = m_pageD->addNavButton("Main");
-    auto* toB = m_pageD->addNavButton("Devices");
-    auto* toC = m_pageD->addNavButton("Navigation");
-    auto* toD = m_pageD->addNavButton("Statistics");
-    auto* toE = m_pageD->addNavButton("Encryption");
-
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
 }
 
 void MainWindow::buildPageE()
@@ -917,18 +891,10 @@ void MainWindow::buildPageE()
     m_pageE->contentLayout()->addSpacing(20);
     m_pageE->contentLayout()->addWidget(m_lockedPlaceholderE, 1);
 
-    auto* toA = m_pageE->addNavButton("Main");
-    auto* toB = m_pageE->addNavButton("Devices");
-    auto* toC = m_pageE->addNavButton("Navigation");
-    auto* toD = m_pageE->addNavButton("Statistics");
-    auto* toE = m_pageE->addNavButton("Encryption");
-    auto* startDemoBtn = m_pageE->addNavButton("Trigger Demo");
-
-    connect(toA, &QPushButton::clicked, this, [this]() { goTo(PageId::Main); });
-    connect(toB, &QPushButton::clicked, this, [this]() { goTo(PageId::Devices); });
-    connect(toC, &QPushButton::clicked, this, [this]() { goTo(PageId::Navigation); });
-    connect(toD, &QPushButton::clicked, this, [this]() { goTo(PageId::Statistics); });
-    connect(toE, &QPushButton::clicked, this, [this]() { goTo(PageId::Encryption); });
+    auto* startDemoBtn = new QPushButton("Trigger Demo", m_pageE);
+    startDemoBtn->setMinimumHeight(36);
+    startDemoBtn->setFocusPolicy(Qt::NoFocus);
+    m_pageE->contentLayout()->addWidget(startDemoBtn, 0, Qt::AlignRight);
     connect(startDemoBtn, &QPushButton::clicked, this, &MainWindow::startEncryptionDemo);
 
     m_encryptionTimer = new QTimer(this);
@@ -1326,6 +1292,9 @@ void MainWindow::goTo(PageId pageId)
         const int index = static_cast<int>(pageId);
         const auto screen = m_screens.value(index);
         m_stack->setCurrentIndex(index);
+        if (m_bottomNav) {
+            m_bottomNav->setCurrentIndex(index);
+        }
         statusBar()->showMessage(
             QString("Pantalla %1 - %2").arg(screen.number).arg(screen.id),
             1500);

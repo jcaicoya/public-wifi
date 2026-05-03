@@ -4,6 +4,7 @@
 
 class QLabel;
 class QPushButton;
+class QFrame;
 class QVBoxLayout;
 class QHBoxLayout;
 
@@ -24,6 +25,7 @@ public:
 private:
     QLabel* m_idLabel = nullptr;
     QLabel* m_titleLabel = nullptr;
+    QFrame* m_navFrame = nullptr;
     QVBoxLayout* m_mainLayout = nullptr;
     QVBoxLayout* m_contentLayout = nullptr;
     QHBoxLayout* m_navLayout = nullptr;
