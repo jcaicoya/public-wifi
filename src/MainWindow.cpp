@@ -31,6 +31,7 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
+#include <QStyle>
 #include <QTextEdit>
 #include <QScrollBar>
 #include <QTcpSocket>
@@ -42,6 +43,7 @@
 #include <QAudioFormat>
 #include <QAudioSink>
 #include <QBuffer>
+#include <QColor>
 #include <QGraphicsOpacityEffect>
 #include <QProgressBar>
 #include <QPropertyAnimation>
@@ -216,6 +218,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     buildUi();
     wireNavigation();
     qApp->installEventFilter(this);
+    updateControlStatusPanel();
     goTo(PageId::Main);
 
     statusBar()->showMessage("Ready");
@@ -332,6 +335,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
         connect(m_routerRetryTimer, &QTimer::timeout, this, &MainWindow::tryConnectRouter);
         tryConnectRouter();
     }
+    updateControlStatusPanel();
 }
 
 MainWindow::~MainWindow()
@@ -423,6 +427,7 @@ void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObjec
             // Update IP name if it was previously just an IP
             foundItem->setText(device);
         }
+        updateControlStatusPanel();
     }
 
     // En C mostramos solo el tráfico del device seleccionado
@@ -526,6 +531,7 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
     if (foundItem && m_devicesListB->currentItem() == foundItem) {
         updateNavigationHeader();
     }
+    updateControlStatusPanel();
 
     if (m_config.mode == ShowConfig::Mode::Demo && m_console1) {
         const QString ts   = QDateTime::currentDateTime().toString("hh:mm:ss");
@@ -620,7 +626,7 @@ void MainWindow::buildUi()
 
 void MainWindow::buildPageA()
 {
-    m_pageA = new ScreenPage("", "Cybershow Command Center", this);
+    m_pageA = new ScreenPage("", "Centro de control Cybershow", this);
 
     auto* mainSplitter = new QSplitter(Qt::Horizontal, m_pageA);
 
@@ -647,10 +653,10 @@ void MainWindow::buildPageA()
         return std::make_pair(container, textEdit);
     };
 
-    auto c1 = createConsole("NODE 01 // DEVICE WATCH");
-    auto c2 = createConsole("NODE 02 // TRAFFIC EVENTS");
-    auto c3 = createConsole("NODE 03 // SYSTEM LOGS");
-    auto c4 = createConsole("NODE 04 // ACTIVE CONNECTIONS");
+    auto c1 = createConsole("Nodo 01 // Vigilancia de dispositivos");
+    auto c2 = createConsole("Nodo 02 // Eventos de trafico");
+    auto c3 = createConsole("Nodo 03 // Logs del sistema");
+    auto c4 = createConsole("Nodo 04 // Conexiones activas");
 
     m_console1 = c1.second;
     m_console2 = c2.second;
@@ -662,31 +668,47 @@ void MainWindow::buildPageA()
     gridLayout->addWidget(c3.first, 1, 0);
     gridLayout->addWidget(c4.first, 1, 1);
 
-    // Right side: Controls
-    auto* controlsWidget = new QWidget(mainSplitter);
+    auto* controlsWidget = new QFrame(mainSplitter);
+    controlsWidget->setObjectName("CyberPanelRaised");
     auto* controlsLayout = new QVBoxLayout(controlsWidget);
+    controlsLayout->setContentsMargins(18, 18, 18, 18);
+    controlsLayout->setSpacing(12);
 
-    auto* introLabel = new QLabel("CYBERSHOW\nPublic Wi-Fi", controlsWidget);
-    introLabel->setAlignment(Qt::AlignCenter);
-    QFont font = introLabel->font();
-    font.setPointSize(28);
-    font.setBold(true);
-    introLabel->setFont(font);
+    auto* moduleLabel = new QLabel("PUBLIC WI-FI", controlsWidget);
+    moduleLabel->setObjectName("KickerLabel");
+    moduleLabel->setAlignment(Qt::AlignCenter);
 
-    auto* statusLabel = new QLabel("SYSTEM STATUS", controlsWidget);
-    statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setStyleSheet("color: #FF3333; font-weight: bold; font-family: Consolas; font-size: 16px;");
+    auto* titleLabel = new QLabel("Estado operativo", controlsWidget);
+    titleLabel->setObjectName("PanelTitle");
+    titleLabel->setAlignment(Qt::AlignCenter);
 
-    auto* imageLabel = new QLabel(controlsWidget);
-    QPixmap cuarzito(":/flying-cuarzito.png");
-    imageLabel->setPixmap(cuarzito.scaled(400, 400, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    imageLabel->setAlignment(Qt::AlignCenter);
+    auto makeStatusRow = [controlsWidget, controlsLayout](const QString& label, const QString& objectName) {
+        auto* row = new QFrame(controlsWidget);
+        row->setObjectName("CyberPanel");
+        auto* rowLayout = new QVBoxLayout(row);
+        rowLayout->setContentsMargins(12, 10, 12, 10);
+        rowLayout->setSpacing(4);
 
-    controlsLayout->addStretch();
-    controlsLayout->addWidget(introLabel);
-    controlsLayout->addWidget(statusLabel);
-    controlsLayout->addSpacing(40);
-    controlsLayout->addWidget(imageLabel);
+        auto* key = new QLabel(label, row);
+        key->setObjectName("FieldLabel");
+        auto* value = new QLabel("--", row);
+        value->setObjectName(objectName);
+        value->setWordWrap(true);
+
+        rowLayout->addWidget(key);
+        rowLayout->addWidget(value);
+        controlsLayout->addWidget(row);
+        return value;
+    };
+
+    controlsLayout->addWidget(moduleLabel);
+    controlsLayout->addWidget(titleLabel);
+    controlsLayout->addSpacing(4);
+    m_statusModeLabelA = makeStatusRow("Modulo / modo", "StatusInfo");
+    m_statusRouterLabelA = makeStatusRow("Router / conexion", "StatusOk");
+    m_statusPortsLabelA = makeStatusRow("Servidores locales", "StatusInfo");
+    m_statusDevicesLabelA = makeStatusRow("Dispositivos", "StatusOk");
+    m_statusWarningsLabelA = makeStatusRow("Avisos", "StatusWarning");
     controlsLayout->addStretch();
 
     mainSplitter->addWidget(consolesWidget);
@@ -1155,6 +1177,60 @@ void MainWindow::updateNavigationHeader()
     }
 }
 
+void MainWindow::updateControlStatusPanel()
+{
+    if (!m_statusModeLabelA || !m_statusRouterLabelA || !m_statusPortsLabelA
+        || !m_statusDevicesLabelA || !m_statusWarningsLabelA) {
+        return;
+    }
+
+    const QString operationMode = (m_config.mode == ShowConfig::Mode::Demo) ? "DEMO" : "LIVE";
+    const QString launchMode = (m_config.launchMode == ShowConfig::LaunchMode::Configure)
+        ? "CONFIGURACION"
+        : "SHOW";
+    m_statusModeLabelA->setText(QString("Public Wi-Fi | %1 | %2").arg(operationMode, launchMode));
+
+    if (m_config.mode == ShowConfig::Mode::Demo) {
+        m_statusRouterLabelA->setObjectName("StatusInfo");
+        m_statusRouterLabelA->setText("Router virtual activo");
+    } else if (m_routerRetryTimer && m_routerRetryTimer->isActive()) {
+        m_statusRouterLabelA->setObjectName("StatusWarning");
+        m_statusRouterLabelA->setText("GL.iNet 192.168.8.1 pendiente");
+    } else {
+        m_statusRouterLabelA->setObjectName("StatusOk");
+        m_statusRouterLabelA->setText("GL.iNet 192.168.8.1 listo");
+    }
+    m_statusRouterLabelA->style()->unpolish(m_statusRouterLabelA);
+    m_statusRouterLabelA->style()->polish(m_statusRouterLabelA);
+
+    m_statusPortsLabelA->setText("Trafico 5555 | Dispositivos 5556 | Portal 8080");
+
+    int knownDevices = 0;
+    int connectedDevices = 0;
+    if (m_devicesListB) {
+        knownDevices = m_devicesListB->count();
+        for (int i = 0; i < m_devicesListB->count(); ++i) {
+            const auto* item = m_devicesListB->item(i);
+            if (item && item->background().color() == QColor(Qt::green)) {
+                ++connectedDevices;
+            }
+        }
+    }
+    m_statusDevicesLabelA->setText(QString("%1 conectados / %2 conocidos")
+        .arg(connectedDevices)
+        .arg(knownDevices));
+
+    if (m_config.mode == ShowConfig::Mode::Demo) {
+        m_statusWarningsLabelA->setText(m_config.actSequence
+            ? "Secuencia automatica activa"
+            : "Demo controlado sin router real");
+    } else if (m_routerRetryTimer && m_routerRetryTimer->isActive()) {
+        m_statusWarningsLabelA->setText("Esperando acceso SSH al router");
+    } else {
+        m_statusWarningsLabelA->setText("Sin avisos");
+    }
+}
+
 void MainWindow::updateStatsView()
 {
     auto resetToIdle = [this](const QString& msg) {
@@ -1387,6 +1463,7 @@ void MainWindow::startRouterScripts()
     startSshConsole(m_sshProc4, m_console4, "top -d 2");
     
     statusBar()->showMessage(QString("Sent start command to router scripts. (IP: %1)").arg(localIp), 3000);
+    updateControlStatusPanel();
 }
 
 void MainWindow::stopRouterScripts()
@@ -1402,6 +1479,7 @@ void MainWindow::stopRouterScripts()
     
     QProcess::startDetached("ssh", args);
     statusBar()->showMessage("Sent stop command to router scripts.", 3000);
+    updateControlStatusPanel();
 }
 
 void MainWindow::startDemoMode()
@@ -1440,6 +1518,7 @@ void MainWindow::startDemoMode()
     m_demoTimer->start(600); // 0.6 s per event
 
     statusBar()->showMessage("Virtual Router (Demo Mode) Started", 3000);
+    updateControlStatusPanel();
 }
 
 void MainWindow::onDemoTimerTick()
@@ -1500,4 +1579,5 @@ void MainWindow::tryConnectRouter()
             m_routerRetryTimer->start(5000);
         }
     }
+    updateControlStatusPanel();
 }

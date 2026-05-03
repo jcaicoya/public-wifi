@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 8.
+Last updated during Step 9.
 
 Completed commits through Step 4:
 
@@ -42,11 +42,17 @@ Step 7 commit:
 
 Step 8 is implemented in the working tree/next commit: standard setup screen.
 
+Step 8 commit:
+
+- `ceb86a9` - `Redesign setup screen`
+
+Step 9 is implemented in the working tree/next commit: Screen 1 control dashboard.
+
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 9: refactor Screen 1, Centro de control.
+- The next planned refactor step is Step 10: refactor Screen 2, Dispositivos + trafico.
 
 Important behavior already implemented:
 
@@ -68,6 +74,9 @@ Important behavior already implemented:
 - Setup uses the common cyber background and a centered technical card.
 - Setup no longer has a fixed side mascot image.
 - Setup visible copy is now Spanish, with `INICIAR SHOW` as the primary action.
+- Screen 1 is now titled `Centro de control Cybershow`.
+- Screen 1 console headers are translated to Spanish.
+- Screen 1 right panel now shows module mode, router state, local ports, device counts, and warnings instead of the mascot image.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -267,6 +276,8 @@ Operator verification:
 - Manually check setup in fullscreen/windowed if applicable.
 
 ## Step 9: Refactor Screen 1, Centro De Control
+
+Status: completed.
 
 Commit intent: align the main control dashboard with the standard operative layout.
 

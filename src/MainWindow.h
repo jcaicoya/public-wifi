@@ -78,6 +78,7 @@ private:
     void processCredentialEvent(const QString& name, const QString& email);
     void updateStatsView();
     void updateNavigationHeader();
+    void updateControlStatusPanel();
 
 private slots:
     void startRouterScripts();
@@ -111,6 +112,11 @@ private:
     QTextEdit* m_console2 = nullptr;
     QTextEdit* m_console3 = nullptr;
     QTextEdit* m_console4 = nullptr;
+    QLabel* m_statusModeLabelA = nullptr;
+    QLabel* m_statusRouterLabelA = nullptr;
+    QLabel* m_statusPortsLabelA = nullptr;
+    QLabel* m_statusDevicesLabelA = nullptr;
+    QLabel* m_statusWarningsLabelA = nullptr;
     
     QProcess* m_sshProc1 = nullptr;
     QProcess* m_sshProc2 = nullptr;
