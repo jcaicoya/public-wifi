@@ -5,6 +5,10 @@
 #include "MapView.h"
 #include "WifiPortalServer.h"
 
+#include <QAbstractSpinBox>
+#include <QApplication>
+#include <QComboBox>
+#include <QEvent>
 #include <QFile>
 #include <QFrame>
 #include <QGridLayout>
@@ -15,17 +19,17 @@
 #include <QJsonObject>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QNetworkInterface>
+#include <QPlainTextEdit>
 #include <QProcess>
 #include <QPushButton>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QTextEdit>
-#include <QShortcut>
-#include <QKeySequence>
 #include <QScrollBar>
 #include <QTcpSocket>
 #include <QTimer>
@@ -45,16 +49,16 @@
 
 namespace
 {
-QString pageName(MainWindow::PageId pageId)
+cybershow::ScreenDefinitions publicWifiScreens()
 {
-    switch (pageId) {
-    case MainWindow::PageId::Main: return "Main";
-    case MainWindow::PageId::Devices: return "Devices";
-    case MainWindow::PageId::Navigation: return "Navigation";
-    case MainWindow::PageId::Statistics: return "Statistics";
-    case MainWindow::PageId::Encryption: return "Encryption";
-    }
-    return "?";
+    using cybershow::ScreenKind;
+    return {
+        {1, "principal", "Centro de control", "Principal", ScreenKind::Operative, true},
+        {2, "dispositivos", "Dispositivos + trafico", "Dispositivos", ScreenKind::Operative, true},
+        {3, "mapa", "Mapa / conexiones", "Mapa", ScreenKind::Operative, true},
+        {4, "riesgo", "Perfil de riesgo", "Riesgo", ScreenKind::Operative, true},
+        {5, "cifrado", "Analisis de cifrado", "Cifrado", ScreenKind::Scenic, true},
+    };
 }
 
 // Stable MAC / RSSI for simulated demo devices
@@ -205,10 +209,11 @@ void playTone(QObject* parent, float freq, int durationMs, float amplitude = 0.4
 } // namespace
 
 MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
-    : QMainWindow(parent), m_config(config)
+    : QMainWindow(parent), m_config(config), m_screens(publicWifiScreens())
 {
     buildUi();
     wireNavigation();
+    qApp->installEventFilter(this);
     goTo(PageId::Main);
 
     statusBar()->showMessage("Ready");
@@ -329,6 +334,8 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
 
 MainWindow::~MainWindow()
 {
+    qApp->removeEventFilter(this);
+
     if (m_routerRetryTimer) {
         m_routerRetryTimer->stop();
     }
@@ -339,6 +346,19 @@ MainWindow::~MainWindow()
     if (m_sshProc2) { m_sshProc2->kill(); m_sshProc2->waitForFinished(); }
     if (m_sshProc3) { m_sshProc3->kill(); m_sshProc3->waitForFinished(); }
     if (m_sshProc4) { m_sshProc4->kill(); m_sshProc4->waitForFinished(); }
+}
+
+bool MainWindow::eventFilter(QObject* watched, QEvent* event)
+{
+    if (event && event->type() == QEvent::KeyPress) {
+        if (auto* widget = qobject_cast<QWidget*>(watched)) {
+            if (widget->window() == this && handleRuntimeKeyPress(static_cast<QKeyEvent*>(event))) {
+                return true;
+            }
+        }
+    }
+
+    return QMainWindow::eventFilter(watched, event);
 }
 
 void MainWindow::processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj)
@@ -1071,41 +1091,75 @@ void MainWindow::wireNavigation()
         goTo(PageId::Navigation);
     });
 
-    // Global keyboard shortcuts that cannot be intercepted by child widgets
-    new QShortcut(QKeySequence(Qt::Key_1), this, [this]() { goTo(PageId::Main); });
-    new QShortcut(QKeySequence(Qt::Key_M), this, [this]() { goTo(PageId::Main); });
+}
 
-    new QShortcut(QKeySequence(Qt::Key_2), this, [this]() { goTo(PageId::Devices); });
-    new QShortcut(QKeySequence(Qt::Key_D), this, [this]() { goTo(PageId::Devices); });
+bool MainWindow::focusIsEditable(QWidget* focusWidget) const
+{
+    if (!focusWidget) return false;
+    if (auto* line = qobject_cast<QLineEdit*>(focusWidget)) return !line->isReadOnly();
+    if (auto* text = qobject_cast<QTextEdit*>(focusWidget)) return !text->isReadOnly();
+    if (auto* plain = qobject_cast<QPlainTextEdit*>(focusWidget)) return !plain->isReadOnly();
+    if (auto* spin = qobject_cast<QAbstractSpinBox*>(focusWidget)) return !spin->isReadOnly();
+    if (auto* combo = qobject_cast<QComboBox*>(focusWidget)) return combo->isEditable();
+    return false;
+}
 
-    new QShortcut(QKeySequence(Qt::Key_3), this, [this]() { goTo(PageId::Navigation); });
-    new QShortcut(QKeySequence(Qt::Key_N), this, [this]() { goTo(PageId::Navigation); });
+bool MainWindow::handleRuntimeKeyPress(QKeyEvent* event)
+{
+    if (!event || focusIsEditable(QApplication::focusWidget())) {
+        return false;
+    }
 
-    new QShortcut(QKeySequence(Qt::Key_4), this, [this]() { goTo(PageId::Statistics); });
-    new QShortcut(QKeySequence(Qt::Key_S), this, [this]() { goTo(PageId::Statistics); });
-
-    new QShortcut(QKeySequence(Qt::Key_5), this, [this]() { goTo(PageId::Encryption); });
-    new QShortcut(QKeySequence(Qt::Key_E), this, [this]() { goTo(PageId::Encryption); });
-
-    new QShortcut(QKeySequence(Qt::Key_Left), this, [this]() {
-        int currentIndex = m_stack->currentIndex();
-        if (currentIndex > 0) {
-            goTo(static_cast<PageId>(currentIndex - 1));
-        }
-    });
-
-    new QShortcut(QKeySequence(Qt::Key_Right), this, [this]() {
-        int currentIndex = m_stack->currentIndex();
-        if (currentIndex < m_stack->count() - 1) {
-            goTo(static_cast<PageId>(currentIndex + 1));
-        }
-    });
-
-    new QShortcut(QKeySequence(Qt::Key_Escape), this, [this]() {
+    switch (event->key()) {
+    case Qt::Key_Left:
+        goToAdjacentScreen(-1);
+        return true;
+    case Qt::Key_Right:
+        goToAdjacentScreen(1);
+        return true;
+    case Qt::Key_Escape:
         if (m_config.launchMode == ShowConfig::LaunchMode::Configure) {
             emit setupRequested();
         }
-    });
+        return true;
+    default:
+        break;
+    }
+
+    if (event->key() >= Qt::Key_1 && event->key() <= Qt::Key_9) {
+        goToScreenNumber(event->key() - Qt::Key_0);
+        return true;
+    }
+
+    return false;
+}
+
+void MainWindow::goToScreenNumber(int number)
+{
+    const int index = cybershow::indexForScreenNumber(m_screens, number);
+    if (index < 0) {
+        return;
+    }
+    goTo(static_cast<PageId>(index));
+}
+
+void MainWindow::goToAdjacentScreen(int direction)
+{
+    if (!m_stack || direction == 0) {
+        return;
+    }
+
+    int index = m_stack->currentIndex();
+    while (true) {
+        index += direction;
+        if (index < 0 || index >= m_screens.size()) {
+            return;
+        }
+        if (m_screens[index].enabled) {
+            goTo(static_cast<PageId>(index));
+            return;
+        }
+    }
 }
 
 void MainWindow::updateNavigationHeader()
@@ -1246,6 +1300,11 @@ void MainWindow::updateStatsView()
 
 void MainWindow::goTo(PageId pageId)
 {
+    const int targetIndex = static_cast<int>(pageId);
+    if (targetIndex < 0 || targetIndex >= m_screens.size() || !m_screens[targetIndex].enabled) {
+        return;
+    }
+
     // Abort any in-progress transition cleanly
     if (m_transitionAnim && m_transitionAnim->state() == QAbstractAnimation::Running)
         m_transitionAnim->stop();
@@ -1264,8 +1323,12 @@ void MainWindow::goTo(PageId pageId)
     connect(m_transitionAnim, &QPropertyAnimation::finished, this, [this, pageId]() {
 
         // Switch at peak black
-        m_stack->setCurrentIndex(static_cast<int>(pageId));
-        statusBar()->showMessage(QString("Page %1").arg(pageName(pageId)), 1500);
+        const int index = static_cast<int>(pageId);
+        const auto screen = m_screens.value(index);
+        m_stack->setCurrentIndex(index);
+        statusBar()->showMessage(
+            QString("Pantalla %1 - %2").arg(screen.number).arg(screen.id),
+            1500);
 
         if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
             if (m_actSequenceTimer) m_actSequenceTimer->stop();

@@ -5,6 +5,10 @@
 #include <QJsonArray>
 #include <QDateTime>
 #include "ShowConfig.h"
+#include "cybershow/common/ScreenDefinition.h"
+
+class QEvent;
+class QKeyEvent;
 
 class QGraphicsOpacityEffect;
 class QProgressBar;
@@ -42,6 +46,9 @@ public:
 signals:
     void setupRequested();
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
     struct DeviceStats {
         int totalEvents = 0;
@@ -59,6 +66,10 @@ private:
 
     void wireNavigation();
     void goTo(PageId pageId);
+    void goToScreenNumber(int number);
+    void goToAdjacentScreen(int direction);
+    bool handleRuntimeKeyPress(QKeyEvent* event);
+    bool focusIsEditable(QWidget* focusWidget) const;
 
     QString getLocalIpAddress() const;
     void processTrafficEvent(const QByteArray& rawLine, const QJsonObject& obj);
@@ -76,6 +87,7 @@ private slots:
 
 private:
     ShowConfig m_config;
+    cybershow::ScreenDefinitions m_screens;
     QTimer* m_routerRetryTimer  = nullptr;
     QTimer* m_actSequenceTimer  = nullptr;
     int     m_actSequenceIndex  = 0;

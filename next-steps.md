@@ -14,6 +14,39 @@ Note: `APP_SPEC.md` is not currently present in this repository. The standards p
 
 Working rule: each numbered step is intended to become one commit. Codex handles source/documentation edits. The operator handles compile, manual test, git, release packaging, deploy, and final show validation after each step.
 
+## Resume Notes
+
+Last updated after Step 5 implementation.
+
+Completed commits through Step 4:
+
+- `b7175c7` - `Document Public Wi-Fi app spec`
+- `d8fffd5` - `Import Cybershow shared components`
+- `a672aec` - `Add show sound effects`
+- `d583fea` - `Add standard CLI launch modes`
+- `070ea29` - `Normalize setup startup flow`
+
+Step 5 is implemented in the working tree/next commit: screen definitions and standard runtime navigation.
+
+Current state:
+
+- `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
+- Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
+- The next planned refactor step is Step 6: replace bottom navigation with common `BottomNavBar`.
+
+Important behavior already implemented:
+
+- No arguments behave like `--configure`.
+- `--configure` shows setup first.
+- `--show` and `--design` skip setup and enter runtime directly.
+- Setup can start runtime with Enter, Space, Right Arrow, `1`, or the primary button when focus is not editable.
+- Runtime `Esc` requests setup only in configure launch mode.
+- Runtime `Esc` is inert in show/design launch modes.
+- Show/design setup lockout is currently enforced by startup flow; there is no setup path in those modes.
+- Runtime navigation now uses screen definitions for the five standard screens.
+- Number keys `1`-`5` and Left/Right navigate without wrapping.
+- Letter shortcuts for primary navigation have been removed.
+
 ## Step 1: Document Public Wi-Fi App Spec
 
 Status: completed.
@@ -109,6 +142,8 @@ Operator verification:
 - Manually check setup keyboard behavior and show/design setup lockout.
 
 ## Step 5: Introduce Screen Definitions And Standard Navigation
+
+Status: completed.
 
 Commit intent: replace ad hoc navigation rules with screen metadata and common keyboard behavior.
 
