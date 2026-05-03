@@ -147,6 +147,20 @@ static void placeWindowOnRequestedScreen(QWidget& window, int screenIndex)
     window.move(available.topLeft());
 }
 
+static QRect availableGeometryForScreenIndex(int screenIndex)
+{
+    const auto screens = QGuiApplication::screens();
+    if (screenIndex >= 0 && screenIndex < screens.size()) {
+        return screens.at(screenIndex)->availableGeometry();
+    }
+
+    if (const QScreen* screen = QGuiApplication::primaryScreen()) {
+        return screen->availableGeometry();
+    }
+
+    return {};
+}
+
 static double uiScaleForOptions(const cybershow::AppLaunchOptions& options)
 {
     const auto screens = QGuiApplication::screens();
@@ -168,16 +182,31 @@ static double uiScaleForOptions(const cybershow::AppLaunchOptions& options)
 
 static void showMainWindow(MainWindow& window, const ShowConfig& config)
 {
-    placeWindowOnRequestedScreen(window, config.screenIndex);
-
+    const QRect available = availableGeometryForScreenIndex(config.screenIndex);
     if (config.fullscreen) {
+        if (!available.isEmpty()) {
+            window.setGeometry(available);
+        }
         window.showFullScreen();
     } else if (config.windowed) {
-        if (config.screenIndex < 0) {
+        if (!available.isEmpty()) {
+            const QSize targetSize(
+                qBound(1280, int(available.width() * 0.90), 1680),
+                qBound(720, int(available.height() * 0.90), 1080));
+            const QRect targetRect(
+                QPoint(
+                    available.x() + (available.width() - targetSize.width()) / 2,
+                    available.y() + (available.height() - targetSize.height()) / 2),
+                targetSize);
+            window.setGeometry(targetRect.intersected(available));
+        } else {
             window.resize(1280, 720);
         }
         window.show();
     } else {
+        if (!available.isEmpty()) {
+            window.setGeometry(available);
+        }
         window.showMaximized();
     }
 }

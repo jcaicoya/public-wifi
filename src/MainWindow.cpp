@@ -634,7 +634,6 @@ void MainWindow::buildUi()
 {
     setWindowTitle("Public Wi-Fi - Cybershow");
     setMinimumSize(1280, 720);
-    resize(1440, 900);
 
     auto* central = new CyberBackgroundWidget(this);
     central->setGlowIntensity(0.85);
