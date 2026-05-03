@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 11.
+Last updated during Step 12.
 
 Completed commits through Step 4:
 
@@ -50,13 +50,17 @@ Step 10 commit:
 
 - `fda477b` - `Refactor device traffic screen`
 
-Step 11 is implemented in the working tree/next commit: Screen 3 Mapa / conexiones.
+Step 11 commit:
+
+- `2795641` - `Refactor map connections screen`
+
+Step 12 is implemented in the working tree/next commit: Screen 4 Perfil de riesgo.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 12: refactor Screen 4, Perfil de riesgo.
+- The next planned refactor step is Step 13: refactor Screen 5, Analisis de cifrado.
 
 Important behavior already implemented:
 
@@ -90,6 +94,9 @@ Important behavior already implemented:
 - Screen 3 selected-device header now uses `OBJETIVO` and the empty state is `Sin dispositivo seleccionado`.
 - Screen 3 side panel is now `Eventos del dispositivo`.
 - Screen 3 map projection has stronger contrast, larger destination labels, and a display-only destination pulse when packets arrive.
+- Screen 4 is now titled `Perfil de riesgo`.
+- Screen 4 score label is now `PUNTUACION DE RIESGO`, with Spanish statuses `BAJO`, `MODERADO`, `ALTO`, `CRITICO`, and `SIN DATOS`.
+- Screen 4 lower panel now shows target summary, detected categories, observed services, risk factors, timeline, and operator-facing explanation from the existing stats.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -371,6 +378,8 @@ Operator verification:
 - Manual demo packet trail check.
 
 ## Step 12: Refactor Screen 4, Perfil De Riesgo
+
+Status: completed.
 
 Commit intent: make the risk screen useful as an operative explanation surface.
 

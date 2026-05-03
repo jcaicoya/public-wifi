@@ -32,6 +32,7 @@
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
+#include <QStringList>
 #include <QTextEdit>
 #include <QScrollBar>
 #include <QTcpSocket>
@@ -890,26 +891,25 @@ void MainWindow::buildPageC()
 
 void MainWindow::buildPageD()
 {
-    m_pageD = new ScreenPage("", "Risk Profile", this);
+    m_pageD = new ScreenPage("", "Perfil de riesgo", this);
 
     // --- Score panel ---
     auto* scoreFrame = new QFrame(m_pageD);
-    scoreFrame->setStyleSheet(
-        "QFrame { background: #0d0d1a; border: 1px solid #1E283C; border-radius: 8px; }");
+    scoreFrame->setObjectName("CyberPanelRaised");
     scoreFrame->setFixedHeight(200);
     auto* scoreLayout = new QVBoxLayout(scoreFrame);
     scoreLayout->setAlignment(Qt::AlignCenter);
-    scoreLayout->setSpacing(6);
+    scoreLayout->setContentsMargins(18, 16, 18, 16);
+    scoreLayout->setSpacing(8);
 
-    auto* scoreTitleLabel = new QLabel(QStringLiteral("THREAT SCORE"), scoreFrame);
+    auto* scoreTitleLabel = new QLabel(QStringLiteral("PUNTUACION DE RIESGO"), scoreFrame);
     scoreTitleLabel->setAlignment(Qt::AlignCenter);
-    scoreTitleLabel->setStyleSheet(
-        "color: #666666; font-family: Consolas; font-size: 13px; letter-spacing: 4px; border: none;");
+    scoreTitleLabel->setObjectName("KickerLabel");
 
     m_scoreLabelD = new QLabel(QStringLiteral("--"), scoreFrame);
     m_scoreLabelD->setAlignment(Qt::AlignCenter);
     m_scoreLabelD->setStyleSheet(
-        "color: #444444; font-family: Consolas; font-size: 72px; font-weight: bold; border: none;");
+        "color: #5F6B78; font-family: Consolas; font-size: 72px; font-weight: bold; border: none;");
 
     m_scoreBarD = new QProgressBar(scoreFrame);
     m_scoreBarD->setRange(0, 100);
@@ -917,13 +917,13 @@ void MainWindow::buildPageD()
     m_scoreBarD->setTextVisible(false);
     m_scoreBarD->setFixedHeight(18);
     m_scoreBarD->setStyleSheet(
-        "QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
-        "QProgressBar::chunk { background: #444444; border-radius: 9px; }");
+        "QProgressBar { background: #20242B; border-radius: 9px; border: none; }"
+        "QProgressBar::chunk { background: #5F6B78; border-radius: 9px; }");
 
-    m_riskLabelD = new QLabel(QStringLiteral("AWAITING DATA"), scoreFrame);
+    m_riskLabelD = new QLabel(QStringLiteral("SIN DATOS"), scoreFrame);
     m_riskLabelD->setAlignment(Qt::AlignCenter);
     m_riskLabelD->setStyleSheet(
-        "color: #444444; font-family: Consolas; font-size: 20px; font-weight: bold; "
+        "color: #5F6B78; font-family: Consolas; font-size: 20px; font-weight: bold; "
         "letter-spacing: 3px; border: none;");
 
     scoreLayout->addWidget(scoreTitleLabel);
@@ -935,9 +935,12 @@ void MainWindow::buildPageD()
     m_statsPlaceholderD = new QTextEdit(m_pageD);
     m_statsPlaceholderD->setReadOnly(true);
     m_statsPlaceholderD->setAcceptRichText(true);
-    m_statsPlaceholderD->setStyleSheet(
-        "background: #0d0d1a; color: #888888; font-family: Consolas, monospace; "
-        "font-size: 14px; border: 1px solid #1E283C;");
+    m_statsPlaceholderD->setHtml(
+        QStringLiteral("<div style='font-family:Consolas; color:#8D96A3;'>"
+                       "<h2 style='color:#F2F5F8; margin-bottom:8px;'>Perfil sin datos</h2>"
+                       "<p>Seleccione un dispositivo en la pantalla 2 para ver su perfil de riesgo.</p>"
+                       "<p style='color:#5F6B78;'>El panel se actualiza con el trafico observado.</p>"
+                       "</div>"));
 
     m_pageD->contentLayout()->addWidget(scoreFrame);
     m_pageD->contentLayout()->addWidget(m_statsPlaceholderD, 1);
@@ -1295,19 +1298,23 @@ void MainWindow::updateStatsView()
 {
     auto resetToIdle = [this](const QString& msg) {
         if (m_scoreLabelD)  m_scoreLabelD->setText(QStringLiteral("--"));
-        if (m_riskLabelD)   m_riskLabelD->setText(QStringLiteral("AWAITING DATA"));
+        if (m_riskLabelD)   m_riskLabelD->setText(QStringLiteral("SIN DATOS"));
         if (m_scoreBarD)    m_scoreBarD->setValue(0);
         const QString dimStyle =
-            "color: #444444; font-family: Consolas; font-size: %1px; font-weight: bold; "
+            "color: #5F6B78; font-family: Consolas; font-size: %1px; font-weight: bold; "
             "letter-spacing: 3px; border: none;";
         if (m_scoreLabelD) m_scoreLabelD->setStyleSheet(dimStyle.arg(72));
         if (m_riskLabelD)  m_riskLabelD->setStyleSheet(dimStyle.arg(20));
         if (m_scoreBarD)   m_scoreBarD->setStyleSheet(
-            "QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
-            "QProgressBar::chunk { background: #444444; border-radius: 9px; }");
+            "QProgressBar { background: #20242B; border-radius: 9px; border: none; }"
+            "QProgressBar::chunk { background: #5F6B78; border-radius: 9px; }");
         if (m_statsPlaceholderD)
             m_statsPlaceholderD->setHtml(
-                QStringLiteral("<p style='color:#555; font-family:Consolas;'>") + msg + "</p>");
+                QString("<div style='font-family:Consolas; color:#8D96A3;'>"
+                        "<h2 style='color:#F2F5F8; margin-bottom:8px;'>Perfil sin datos</h2>"
+                        "<p>%1</p>"
+                        "<p style='color:#5F6B78;'>Seleccione un dispositivo y espere trafico para construir el perfil.</p>"
+                        "</div>").arg(msg.toHtmlEscaped()));
     };
 
     QString selectedIp, selectedName;
@@ -1317,11 +1324,11 @@ void MainWindow::updateStatsView()
     }
 
     if (selectedIp.isEmpty()) {
-        resetToIdle(QStringLiteral("Select a device on Screen B to view its risk profile."));
+        resetToIdle(QStringLiteral("Seleccione un dispositivo en la pantalla 2 para ver su perfil de riesgo."));
         return;
     }
     if (!m_deviceStats.contains(selectedIp)) {
-        resetToIdle(QString("No data yet for: %1").arg(selectedName));
+        resetToIdle(QString("Aun no hay datos para: %1").arg(selectedName));
         return;
     }
 
@@ -1331,16 +1338,16 @@ void MainWindow::updateStatsView()
     // Determine risk tier
     QString riskText, riskColor;
     if (score <= 25) {
-        riskText  = QStringLiteral("LOW RISK");
+        riskText  = QStringLiteral("BAJO");
         riskColor = QStringLiteral("#00AA44");
     } else if (score <= 50) {
-        riskText  = QStringLiteral("MODERATE");
+        riskText  = QStringLiteral("MODERADO");
         riskColor = QStringLiteral("#FFD700");
     } else if (score <= 75) {
-        riskText  = QStringLiteral("HIGH RISK");
+        riskText  = QStringLiteral("ALTO");
         riskColor = QStringLiteral("#FF8800");
     } else {
-        riskText  = QStringLiteral("CRITICAL");
+        riskText  = QStringLiteral("CRITICO");
         riskColor = QStringLiteral("#FF3333");
     }
 
@@ -1353,7 +1360,7 @@ void MainWindow::updateStatsView()
     if (m_scoreBarD) {
         m_scoreBarD->setValue(score);
         m_scoreBarD->setStyleSheet(
-            QString("QProgressBar { background: #1a1a2e; border-radius: 9px; border: none; }"
+            QString("QProgressBar { background: #20242B; border-radius: 9px; border: none; }"
                     "QProgressBar::chunk { background: %1; border-radius: 9px; }").arg(riskColor));
     }
     if (m_riskLabelD) {
@@ -1365,23 +1372,61 @@ void MainWindow::updateStatsView()
 
     // Service breakdown — sorted by weight descending, colored
     const qint64 durationSecs = qMax(stats.firstSeen.secsTo(stats.lastSeen), qint64(1));
-
-    QString html =
-        QString("<p style='color:#00FFFF; font-family:Consolas; font-size:13px;'>"
-                "TARGET: <b>%1</b> &nbsp;(%2)</p>"
-                "<p style='color:#555; font-family:Consolas; font-size:12px;'>"
-                "First seen: %3 &nbsp;|&nbsp; Duration: %4s &nbsp;|&nbsp; Packets: %5</p>"
-                "<hr style='border:none; border-top:1px solid #1E283C;'/>")
-        .arg(selectedName, selectedIp,
-             stats.firstSeen.toString("hh:mm:ss"),
-             QString::number(durationSecs),
-             QString::number(stats.totalEvents));
+    const QString durationText = QString("%1s").arg(durationSecs);
 
     auto keys = stats.serviceCounts.keys();
     std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) {
         return kServiceWeights.value(a, 1) > kServiceWeights.value(b, 1);
     });
 
+    QHash<QString, int> categoryCounts;
+    QStringList riskFactors;
+    for (const QString& svc : keys) {
+        categoryCounts[serviceCategoryLabel(svc)] += stats.serviceCounts.value(svc);
+    }
+    if (stats.serviceCounts.contains("BANKING")) riskFactors << "Banca o pagos detectados";
+    if (stats.serviceCounts.contains("EMAIL")) riskFactors << "Correo personal observado";
+    if (stats.serviceCounts.contains("VPN")) riskFactors << "Uso de VPN o tunel seguro";
+    if (stats.serviceCounts.contains("MAPS")) riskFactors << "Consultas asociadas a ubicacion";
+    if (stats.serviceCounts.contains("WHATSAPP")) riskFactors << "Mensajeria cifrada presente";
+    if (stats.serviceCounts.contains("SOCIAL")) riskFactors << "Actividad social identificable";
+    if (riskFactors.isEmpty()) riskFactors << "Solo trafico de bajo impacto por ahora";
+
+    const QString explanation = (score <= 25)
+        ? QStringLiteral("El perfil actual muestra poco trafico sensible. Mantener observacion.")
+        : (score <= 50)
+            ? QStringLiteral("Hay mezcla de servicios personales y actividad comun. Explicar exposicion basica en Wi-Fi publico.")
+            : (score <= 75)
+                ? QStringLiteral("Se observan categorias privadas o de seguridad. Usar este objetivo para explicar metadatos visibles.")
+                : QStringLiteral("Se acumulan varias categorias sensibles. Priorizar este objetivo para la explicacion operativa.");
+
+    QString html =
+        QString("<div style='font-family:Consolas; color:#D8DEE8;'>"
+                "<h2 style='color:#00D1FF; margin:0 0 8px 0;'>Resumen del objetivo</h2>"
+                "<p><b>OBJETIVO:</b> %1 &nbsp; <span style='color:#8D96A3;'>%2</span></p>"
+                "<p style='color:#8D96A3;'>Primera senal: %3 &nbsp;|&nbsp; Ultima senal: %4 &nbsp;|&nbsp; Duracion: %5 &nbsp;|&nbsp; Eventos: %6</p>"
+                "<hr style='border:none; border-top:1px solid #293241;'/>"
+                "<h3 style='color:#F2F5F8; margin-bottom:6px;'>Categorias detectadas</h3>")
+            .arg(selectedName.toHtmlEscaped(),
+                 selectedIp.toHtmlEscaped(),
+                 stats.firstSeen.toString("hh:mm:ss"),
+                 stats.lastSeen.toString("hh:mm:ss"),
+                 durationText,
+                 QString::number(stats.totalEvents));
+
+    html += QStringLiteral("<table style='font-family:Consolas; font-size:13px; width:100%; margin-bottom:10px;'>");
+    auto categoryKeys = categoryCounts.keys();
+    std::sort(categoryKeys.begin(), categoryKeys.end(), [&categoryCounts](const QString& a, const QString& b) {
+        return categoryCounts.value(a) > categoryCounts.value(b);
+    });
+    for (const QString& category : categoryKeys) {
+        html += QString("<tr><td style='color:#00D1FF; width:150px;'><b>%1</b></td>"
+                        "<td style='color:#D8DEE8;'>%2 eventos</td></tr>")
+            .arg(category.toHtmlEscaped(), QString::number(categoryCounts.value(category)));
+    }
+    html += QStringLiteral("</table>");
+
+    html += QStringLiteral("<h3 style='color:#F2F5F8; margin-bottom:6px;'>Servicios observados</h3>");
     html += QStringLiteral("<table style='font-family:Consolas; font-size:14px; width:100%;'>");
     for (const QString& svc : keys) {
         const QString color  = serviceColor(svc);
@@ -1393,11 +1438,23 @@ void MainWindow::updateStatsView()
             "<td style='width:130px;'><font color='%1'><b>%2</b></font></td>"
             "<td><div style='display:inline-block; background:%1; height:10px; "
             "width:%3px; border-radius:5px; vertical-align:middle;'></div></td>"
-            "<td style='color:#666; padding-left:8px;'>%4 req</td>"
+            "<td style='color:#666; padding-left:8px;'>%4 eventos</td>"
             "</tr>")
-            .arg(color, svc).arg(barWidth).arg(count);
+            .arg(color, svc.toHtmlEscaped()).arg(barWidth).arg(count);
     }
     html += QStringLiteral("</table>");
+
+    html += QStringLiteral("<h3 style='color:#F2F5F8; margin:14px 0 6px 0;'>Factores de riesgo</h3><ul style='margin-top:0;'>");
+    for (const QString& factor : riskFactors) {
+        html += QString("<li style='color:#D8DEE8;'>%1</li>").arg(factor.toHtmlEscaped());
+    }
+    html += QStringLiteral("</ul>");
+
+    html += QString("<h3 style='color:#F2F5F8; margin:14px 0 6px 0;'>Lectura operativa</h3>"
+                    "<p style='color:%1; font-weight:800;'>Estado: %2</p>"
+                    "<p style='color:#B8C0CC;'>%3</p>"
+                    "</div>")
+        .arg(riskColor, riskText.toHtmlEscaped(), explanation.toHtmlEscaped());
 
     if (m_statsPlaceholderD) m_statsPlaceholderD->setHtml(html);
 }
