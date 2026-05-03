@@ -83,6 +83,9 @@ private:
     void updateControlStatusPanel();
     void setupDemoWatermark();
     void updateDemoWatermarkGeometry();
+    void resetEncryptionScreen();
+    void triggerEncryptionScreen();
+    void beginEncryptionPlayback();
 
 private slots:
     void startRouterScripts();
@@ -153,6 +156,9 @@ private:
     QTimer* m_encryptionTimer = nullptr;
     int m_encryptionStep = 0;
     int m_bruteForceTick = 0;
+    QStringList m_encryptionPlaybackLines;
+    int m_encryptionPlaybackLine = 0;
+    int m_encryptionPlaybackChar = 0;
     
     void startEncryptionDemo();
     void updateEncryptionAnimation();
