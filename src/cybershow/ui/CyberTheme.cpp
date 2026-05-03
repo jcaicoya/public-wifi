@@ -1,6 +1,15 @@
 #include "CyberTheme.h"
 
+#include <QtGlobal>
+
 namespace CyberTheme {
+
+namespace {
+int scaled(int value, double scale)
+{
+    return qMax(1, qRound(value * scale));
+}
+} // namespace
 
 QColor color(const char* hex, int alpha) {
     QColor c(QString::fromUtf8(hex));
@@ -8,8 +17,8 @@ QColor color(const char* hex, int alpha) {
     return c;
 }
 
-QString globalStyleSheet() {
-    return QStringLiteral(R"QSS(
+QString globalStyleSheet(double scale) {
+    QString css = QStringLiteral(R"QSS(
         QWidget {
             background: transparent;
             color: #F2F5F8;
@@ -205,6 +214,52 @@ QString globalStyleSheet() {
             border-color: #64748B;
         }
     )QSS");
+
+    const struct Replacement {
+        const char* from;
+        int value;
+    } sizes[] = {
+        {"font-size: 11px", 11},
+        {"font-size: 12px", 12},
+        {"font-size: 13px", 13},
+        {"font-size: 14px", 14},
+        {"font-size: 16px", 16},
+        {"font-size: 20px", 20},
+        {"font-size: 24px", 24},
+        {"font-size: 42px", 42},
+        {"font-size: 58px", 58},
+    };
+
+    for (const auto& item : sizes) {
+        css.replace(item.from, QString("font-size: %1px").arg(scaled(item.value, scale)));
+    }
+
+    const struct SpacingReplacement {
+        const char* from;
+        int value;
+    } spacings[] = {
+        {"letter-spacing: 0.5px", 1},
+        {"letter-spacing: 0.7px", 1},
+        {"letter-spacing: 0.8px", 1},
+        {"letter-spacing: 2px", 2},
+        {"letter-spacing: 3px", 3},
+    };
+
+    for (const auto& item : spacings) {
+        css.replace(item.from, QString("letter-spacing: %1px").arg(scaled(item.value, scale)));
+    }
+
+    css.replace("padding: 8px 14px", QString("padding: %1px %2px")
+        .arg(scaled(8, scale))
+        .arg(scaled(14, scale)));
+    css.replace("padding: 12px 18px", QString("padding: %1px %2px")
+        .arg(scaled(12, scale))
+        .arg(scaled(18, scale)));
+    css.replace("padding: 12px 14px", QString("padding: %1px %2px")
+        .arg(scaled(12, scale))
+        .arg(scaled(14, scale)));
+
+    return css;
 }
 
 } // namespace CyberTheme

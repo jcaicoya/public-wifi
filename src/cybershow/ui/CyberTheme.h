@@ -30,6 +30,6 @@ inline constexpr const char* Error = "#FF3347";
 inline constexpr const char* Violet = "#8B5CF6";
 
 QColor color(const char* hex, int alpha = 255);
-QString globalStyleSheet();
+QString globalStyleSheet(double scale = 1.0);
 
 } // namespace CyberTheme

@@ -147,6 +147,25 @@ static void placeWindowOnRequestedScreen(QWidget& window, int screenIndex)
     window.move(available.topLeft());
 }
 
+static double uiScaleForOptions(const cybershow::AppLaunchOptions& options)
+{
+    const auto screens = QGuiApplication::screens();
+    const QScreen* screen = nullptr;
+    if (options.screenIndex >= 0 && options.screenIndex < screens.size()) {
+        screen = screens.at(options.screenIndex);
+    } else {
+        screen = QGuiApplication::primaryScreen();
+    }
+
+    if (!screen) {
+        return 1.0;
+    }
+
+    const QRect available = screen->availableGeometry();
+    const double scale = available.height() / 900.0;
+    return qBound(0.85, scale, 1.15);
+}
+
 static void showMainWindow(MainWindow& window, const ShowConfig& config)
 {
     placeWindowOnRequestedScreen(window, config.screenIndex);
@@ -215,10 +234,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    app.setStyle("Fusion");
-    app.setStyleSheet(CyberTheme::globalStyleSheet());
     cybershow::OrchestratorProtocol::status("READY");
     cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("startup"), QStringLiteral("Application ready"));
+
+    const double uiScale = uiScaleForOptions(launchParse.options);
+    app.setStyle("Fusion");
+    app.setStyleSheet(CyberTheme::globalStyleSheet(uiScale));
 
     bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
     ShowConfig config = shouldShowSetup ? ShowConfig{} : configFromLaunchOptions(launchParse.options);
