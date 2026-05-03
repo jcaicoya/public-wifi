@@ -862,10 +862,6 @@ void MainWindow::buildPageB()
 
     auto* devicesTitle = new QLabel("Dispositivos conectados / conocidos", leftPane);
     devicesTitle->setObjectName("PanelTitle");
-    QFont titleFont = devicesTitle->font();
-    titleFont.setPointSize(18);
-    titleFont.setBold(true);
-    devicesTitle->setFont(titleFont);
 
     m_devicesListB = new QListWidget(leftPane);
     m_devicesListB->setMinimumSize(220, 260);
@@ -883,7 +879,6 @@ void MainWindow::buildPageB()
 
     auto* rawTitle = new QLabel("Mensajes del router", rightPane);
     rawTitle->setObjectName("PanelTitle");
-    rawTitle->setFont(titleFont);
 
     m_rawTrafficViewB = new QTextEdit(rightPane);
     m_rawTrafficViewB->setReadOnly(true);
@@ -918,10 +913,6 @@ void MainWindow::buildPageC()
 
     auto* mapTitle = new QLabel("Mapa / conexiones", mapPane);
     mapTitle->setObjectName("PanelTitle");
-    QFont titleFont = mapTitle->font();
-    titleFont.setPointSize(18);
-    titleFont.setBold(true);
-    mapTitle->setFont(titleFont);
 
     m_mapViewC = new MapView(mapPane);
     m_mapViewC->setMinimumHeight(280);
@@ -939,7 +930,6 @@ void MainWindow::buildPageC()
 
     auto* eventsTitle = new QLabel("Eventos del dispositivo", eventsPane);
     eventsTitle->setObjectName("PanelTitle");
-    eventsTitle->setFont(titleFont);
 
     m_filteredTrafficViewC = new QTextEdit(eventsPane);
     m_filteredTrafficViewC->setReadOnly(true);
@@ -1065,9 +1055,11 @@ void MainWindow::buildPageE()
     m_lockedPlaceholderE->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     // Use a reassuring cyan/blue border instead of angry red
-    m_lockedPlaceholderE->setStyleSheet(
+    const QString scenicBorderStyle = QString(
         "color: #D9FBFF; background: #071014; border: 3px solid #00D1FF; "
-        QString("border-radius: 16px; padding: %1px;").arg(scenicPadding));
+        "border-radius: 16px; padding: %1px;")
+        .arg(scenicPadding);
+    m_lockedPlaceholderE->setStyleSheet(scenicBorderStyle);
     m_lockedPlaceholderE->setMinimumHeight(440);
     m_lockedPlaceholderE->hide(); // Hidden initially
 
@@ -1298,11 +1290,12 @@ void MainWindow::setupDemoWatermark()
     m_demoWatermark->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     m_demoWatermark->setTextInteractionFlags(Qt::NoTextInteraction);
     m_demoWatermark->setAlignment(Qt::AlignCenter);
-    m_demoWatermark->setStyleSheet(
+    const QString watermarkStyle = QString(
         "color: white; background: transparent; font-family: Consolas, monospace; "
-        QString("font-size: %1px; font-weight: 900; letter-spacing: %2px;")
-            .arg(qBound(46, int(56 * scenicScale), 72))
-            .arg(qBound(4, int(6 * scenicScale), 8)));
+        "font-size: %1px; font-weight: 900; letter-spacing: %2px;")
+        .arg(qBound(46, int(56 * scenicScale), 72))
+        .arg(qBound(4, int(6 * scenicScale), 8));
+    m_demoWatermark->setStyleSheet(watermarkStyle);
 
     m_demoWatermarkOpacity = new QGraphicsOpacityEffect(m_demoWatermark);
     m_demoWatermarkOpacity->setOpacity(0.18);

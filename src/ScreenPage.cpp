@@ -31,7 +31,6 @@ ScreenPage::ScreenPage(const QString& screenId,
     m_idLabel = new QLabel(screenId, headerFrame);
     m_idLabel->setObjectName("ScreenSubtitle");
     QFont idFont = m_idLabel->font();
-    idFont.setPointSize(24);
     idFont.setBold(true);
     m_idLabel->setFont(idFont);
     m_idLabel->setVisible(!screenId.isEmpty());
@@ -40,7 +39,6 @@ ScreenPage::ScreenPage(const QString& screenId,
     m_titleLabel = new QLabel(title, headerFrame);
     m_titleLabel->setObjectName("ScreenTitle");
     QFont titleFont = m_titleLabel->font();
-    titleFont.setPointSize(20);
     titleFont.setBold(true);
     m_titleLabel->setFont(titleFont);
     m_titleLabel->setWordWrap(true);
