@@ -48,6 +48,13 @@
       "date": "2026-05-03T20:24:25",
       "message": "Add live runbook",
       "zip": "cybershow-wifi-v06.zip"
+    },
+    {
+      "version": 7,
+      "commit": "fc796ec",
+      "date": "2026-05-03T22:20:48",
+      "message": "Document responsive runtime scaling",
+      "zip": "cybershow-wifi-v07.zip"
     }
   ]
 }
