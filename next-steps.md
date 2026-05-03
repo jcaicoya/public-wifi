@@ -16,7 +16,7 @@ Working rule: each numbered step is intended to become one commit. Codex handles
 
 ## Resume Notes
 
-Last updated during Step 14.
+Last updated during Step 15.
 
 Completed commits through Step 4:
 
@@ -62,13 +62,17 @@ Step 13 commit:
 
 - `31f61b4` - `Refactor encryption analysis screen`
 
-Step 14 is implemented in the working tree/next commit: minimal orchestrator protocol.
+Step 14 commit:
+
+- `83942f3` - `Add orchestrator protocol hooks`
+
+Step 15 is implemented in the working tree/next commit: operational logging and config follow-up documentation.
 
 Current state:
 
 - `cybershow_app_standards_v0_3/` is intentionally untracked and should remain untracked unless the operator decides otherwise.
 - Codex should not compile or run the app; the operator handles compile, test, git validation, deploy, and release packaging.
-- The next planned refactor step is Step 15: add logging and configuration follow-up hooks.
+- The next planned refactor step is Step 16: final standards pass and documentation sync.
 
 Important behavior already implemented:
 
@@ -113,6 +117,10 @@ Important behavior already implemented:
 - Runtime entry now emits `CYBERSHOW_STATUS RUNNING` after the main window is shown.
 - Screen changes now emit `CYBERSHOW_SCREEN <n> <id>` from the existing navigation switch point.
 - Startup/resource/server failures now emit `CYBERSHOW_STATUS ERROR <code>` where practical.
+- The app now writes operational events to `logs/public-wifi.log` under the executable directory.
+- Operational log format is `timestamp | public-wifi | launchMode | profile | level | component | message`.
+- Credential values and raw traffic payloads are intentionally omitted from the operational log.
+- `--config <path>` remains parsed/stored but JSON config loading is explicitly deferred in docs.
 
 ## Step 1: Document Public Wi-Fi App Spec
 
@@ -471,6 +479,8 @@ Operator verification:
 - Launch from terminal and inspect stdout.
 
 ## Step 15: Add Logging And Configuration Follow-Up Hooks
+
+Status: completed.
 
 Commit intent: prepare common logs/configuration without broad behavioral risk.
 

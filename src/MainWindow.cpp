@@ -5,6 +5,7 @@
 #include "MapView.h"
 #include "WifiPortalServer.h"
 #include "cybershow/common/CyberOrchestratorProtocol.h"
+#include "cybershow/common/CyberOperationalLog.h"
 #include "cybershow/ui/BottomNavBar.h"
 #include "cybershow/ui/CyberBackgroundWidget.h"
 
@@ -252,6 +253,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     goTo(PageId::Main);
 
     statusBar()->showMessage("Ready");
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("mainwindow"), QStringLiteral("Runtime UI initialized"));
 
     m_trafficServer = new TcpJsonLineServer(5555, this);
     m_deviceServer = new TcpJsonLineServer(5556, this);
@@ -291,11 +293,13 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     if (!m_trafficServer->start()) {
         qWarning() << "Traffic server failed to start";
         cybershow::OrchestratorProtocol::status("ERROR", "TRAFFIC_SERVER_START_FAILED");
+        cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("network"), QStringLiteral("Traffic server failed to start on port 5555"));
     }
 
     if (!m_deviceServer->start()) {
         qWarning() << "Device server failed to start";
         cybershow::OrchestratorProtocol::status("ERROR", "DEVICE_SERVER_START_FAILED");
+        cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("network"), QStringLiteral("Device server failed to start on port 5556"));
     }
 
     m_portalServer = new WifiPortalServer(8080, this);
@@ -304,10 +308,12 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
     if (!m_portalServer->start()) {
         qWarning() << "WiFi portal server failed to start on port 8080";
         cybershow::OrchestratorProtocol::status("ERROR", "PORTAL_SERVER_START_FAILED");
+        cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("network"), QStringLiteral("Portal server failed to start on port 8080"));
         statusBar()->showMessage("WARNING: Portal server could not start on port 8080", 5000);
     }
 
     if (m_config.mode == ShowConfig::Mode::Demo) {
+        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("mode"), QStringLiteral("Demo mode started"));
         const QString t = QDateTime::currentDateTime().toString("hh:mm:ss");
         if (m_console1) m_console1->setPlainText(
             QString("[%1] device_watch.sh started\n[%1] Listening for DHCP/arp events...").arg(t));
@@ -364,6 +370,7 @@ MainWindow::MainWindow(const ShowConfig& config, QWidget* parent)
             m_actSequenceTimer->start(7000); // 7 s per screen
         }
     } else {
+        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("mode"), QStringLiteral("Live router mode started"));
         m_routerRetryTimer = new QTimer(this);
         connect(m_routerRetryTimer, &QTimer::timeout, this, &MainWindow::tryConnectRouter);
         tryConnectRouter();
@@ -594,7 +601,8 @@ void MainWindow::processDeviceEvent(const QJsonObject& obj)
 
 void MainWindow::processCredentialEvent(const QString& name, const QString& email)
 {
-    qDebug() << "[CREDENTIAL]" << name << email;
+    qDebug() << "[CREDENTIAL] captured; personal fields omitted";
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("portal"), QStringLiteral("Credential event captured; personal fields omitted"));
 
     playTone(this, 330.0f, 420, 0.6f); // low, heavy alarm tone for credential reveal
 
@@ -1519,6 +1527,10 @@ void MainWindow::goTo(PageId pageId)
             QString("Pantalla %1 - %2").arg(screen.number).arg(screen.id),
             1500);
         cybershow::OrchestratorProtocol::screen(screen.number, screen.id);
+        cybershow::OperationalLog::write(
+            QStringLiteral("INFO"),
+            QStringLiteral("navigation"),
+            QString("Screen changed to %1 %2").arg(screen.number).arg(screen.id));
 
         if (m_config.mode == ShowConfig::Mode::Demo && pageId == PageId::Encryption) {
             if (m_actSequenceTimer) m_actSequenceTimer->stop();

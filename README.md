@@ -99,6 +99,28 @@ At the **TECHNICAL SETUP** screen choose:
 
 Keyboard shortcuts: `1–5` or `M/D/N/S/E` to jump to any screen; `←/→` to cycle.
 
+## Operations
+
+The app emits machine-readable `CYBERSHOW_*` lines on stdout for supervision. Human diagnostics and operational events are written separately.
+
+Operational log:
+
+```text
+logs/public-wifi.log
+```
+
+Format:
+
+```text
+timestamp | public-wifi | launchMode | profile | level | component | message
+```
+
+The log records runtime events such as startup, mode entry, screen changes, and server startup errors. Credential values and raw traffic payloads are not written to this log.
+
+Configuration follow-up:
+
+`--config <path>` is reserved and stored internally, but JSON config loading is deferred. Current runtime configuration still comes from setup controls and CLI profile/window flags.
+
 ---
 
 ## Router Scripts (GL.iNet GL-MT300N-V2, OpenWrt)

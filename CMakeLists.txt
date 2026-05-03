@@ -26,6 +26,8 @@ add_executable(public_wifi src/main.cpp
         src/cybershow/common/CyberNavigationController.h
         src/cybershow/common/CyberNavigationController.cpp
         src/cybershow/common/CyberOrchestratorProtocol.h
+        src/cybershow/common/CyberOperationalLog.h
+        src/cybershow/common/CyberOperationalLog.cpp
         src/cybershow/common/ScreenDefinition.h
         src/cybershow/ui/AlertBanner.h
         src/cybershow/ui/AlertBanner.cpp

@@ -214,6 +214,14 @@ Target log file:
 logs/public-wifi.log
 ```
 
+Current implementation:
+
+- The app writes operational events to `logs/public-wifi.log` under the executable directory.
+- Log lines use the target format:
+  `timestamp | public-wifi | launchMode | profile | level | component | message`.
+- Credential capture is logged only as an occurrence; captured name/email values are intentionally omitted.
+- Raw traffic payloads are not written to the operational log.
+
 Configuration target:
 
 ```text
@@ -232,6 +240,11 @@ Initial configuration scope:
 - `show.actSequence`
 
 Deferred configuration work is allowed if documented in `next-steps.md` and this spec.
+
+Deferred configuration status:
+
+- `--config <path>` is parsed and stored in `ShowConfig::configPath`, but JSON loading is not implemented yet.
+- Until JSON loading is added, setup controls and CLI profile/window options remain the source of runtime configuration.
 
 ## 10. Resource Contract
 

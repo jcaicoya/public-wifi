@@ -13,7 +13,15 @@
 #include "MainWindow.h"
 #include "cybershow/common/CyberAppMode.h"
 #include "cybershow/common/CyberOrchestratorProtocol.h"
+#include "cybershow/common/CyberOperationalLog.h"
 #include "cybershow/ui/CyberTheme.h"
+
+static QString launchModeName(ShowConfig::LaunchMode mode)
+{
+    return mode == ShowConfig::LaunchMode::Configure
+        ? QStringLiteral("configure")
+        : QStringLiteral("show");
+}
 
 // Returns an error description, or an empty string if everything is valid.
 static QString validateResources()
@@ -182,11 +190,14 @@ static bool runSetup(ShowConfig& config, const cybershow::AppLaunchOptions& opti
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    cybershow::OperationalLog::configure(QStringLiteral("startup"), QStringLiteral("unknown"));
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("startup"), QStringLiteral("Application process started"));
 
     const cybershow::ParseResult launchParse =
         cybershow::parseAppLaunchOptions(QCoreApplication::arguments());
     if (!launchParse.ok) {
         cybershow::OrchestratorProtocol::status("ERROR", "INVALID_ARGUMENTS");
+        cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("startup"), QStringLiteral("Invalid launch arguments"));
         QMessageBox::critical(
             nullptr,
             "Public Wi-Fi Cybershow - Startup Error",
@@ -199,6 +210,7 @@ int main(int argc, char *argv[])
     const QString resourceError = validateResources();
     if (!resourceError.isEmpty()) {
         cybershow::OrchestratorProtocol::status("ERROR", "RESOURCE_VALIDATION");
+        cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("startup"), QStringLiteral("Resource validation failed"));
         QMessageBox::critical(
             nullptr,
             "Public Wi-Fi Cybershow — Resource Error",
@@ -211,6 +223,7 @@ int main(int argc, char *argv[])
     app.setStyle("Fusion");
     app.setStyleSheet(CyberTheme::globalStyleSheet());
     cybershow::OrchestratorProtocol::status("READY");
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("startup"), QStringLiteral("Application ready"));
 
     bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
     ShowConfig config = (shouldShowSetup && !launchParse.options.profileProvided)
@@ -219,22 +232,29 @@ int main(int argc, char *argv[])
 
     while (true) {
         if (shouldShowSetup && !runSetup(config, launchParse.options)) {
+            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("setup"), QStringLiteral("Setup cancelled by operator"));
             return 0;
         }
+
+        cybershow::OperationalLog::configure(launchModeName(config.launchMode), config.profile);
+        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Creating runtime window"));
 
         bool setupRequested = false;
         MainWindow window(config);
         QObject::connect(&window, &MainWindow::setupRequested, &app, [&]() {
             setupRequested = true;
+            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Setup requested from runtime"));
             window.close();
             app.quit();
         });
 
         showMainWindow(window, config);
         cybershow::OrchestratorProtocol::status("RUNNING");
+        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Runtime window shown"));
 
         const int result = app.exec();
         if (!setupRequested) {
+            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QString("Application exited with code %1").arg(result));
             return result;
         }
 
