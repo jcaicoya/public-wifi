@@ -20,6 +20,13 @@
       "date": "2026-05-03T13:41:01",
       "message": "Finalize refactor documentation",
       "zip": "cybershow-wifi-v02.zip"
+    },
+    {
+      "version": 3,
+      "commit": "9784cca",
+      "date": "2026-05-03T14:06:23",
+      "message": "Improve Demo mode",
+      "zip": "cybershow-wifi-v03.zip"
     }
   ]
 }
