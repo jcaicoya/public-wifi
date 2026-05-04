@@ -55,6 +55,13 @@
       "date": "2026-05-03T22:20:48",
       "message": "Document responsive runtime scaling",
       "zip": "cybershow-wifi-v07.zip"
+    },
+    {
+      "version": 8,
+      "commit": "a4ef4c2",
+      "date": "2026-05-04T18:44:55",
+      "message": "Remove setup launch mode",
+      "zip": "cybershow-wifi-v08.zip"
     }
   ]
 }
