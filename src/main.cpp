@@ -237,8 +237,13 @@ int main(int argc, char *argv[])
     cybershow::OperationalLog::configure(QStringLiteral("startup"), QStringLiteral("unknown"));
     cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("startup"), QStringLiteral("Application process started"));
 
+    QStringList args = QCoreApplication::arguments();
+    for (auto& a : args) {
+        if (a == "--show")   a = "--live";
+        if (a == "--design") a = "--demo";
+    }
     const cybershow::ParseResult launchParse =
-        cybershow::parseAppLaunchOptions(QCoreApplication::arguments());
+        cybershow::parseAppLaunchOptions(args);
     if (!launchParse.ok) {
         cybershow::OrchestratorProtocol::status("ERROR", "INVALID_ARGUMENTS");
         cybershow::OperationalLog::write(QStringLiteral("ERROR"), QStringLiteral("startup"), QStringLiteral("Invalid launch arguments"));
