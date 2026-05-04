@@ -20,7 +20,6 @@ public:
     QString currentScreenId() const;
     const ScreenDefinitions& screens() const;
 
-    bool handleSetupKeyPress(QKeyEvent* event, QWidget* focusWidget);
     bool handleRuntimeKeyPress(QKeyEvent* event, QWidget* focusWidget);
 
 public slots:
@@ -28,11 +27,8 @@ public slots:
     void goToScreenNumber(int number);
     void nextScreen();
     void previousScreen();
-    void returnToSetupIfAllowed();
 
 signals:
-    void startRequested();
-    void setupRequested();
     void screenRequested(int index, cybershow::ScreenDefinition screen);
     void fullscreenToggleRequested();
     void debugOverlayToggleRequested();

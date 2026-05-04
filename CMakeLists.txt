@@ -19,8 +19,6 @@ find_package(Qt6 COMPONENTS
 
 add_executable(public_wifi src/main.cpp
         src/ShowConfig.h
-        src/InitScreen.h
-        src/InitScreen.cpp
         src/cybershow/common/CyberAppMode.h
         src/cybershow/common/CyberAppMode.cpp
         src/cybershow/common/CyberNavigationController.h

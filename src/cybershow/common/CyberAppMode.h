@@ -7,21 +7,20 @@
 namespace cybershow {
 
 enum class LaunchMode {
-    Configure,
     Demo,
     Live
 };
 
 struct AppLaunchOptions {
-    LaunchMode launchMode = LaunchMode::Configure;
+    LaunchMode launchMode = LaunchMode::Live;
     bool fullscreen = false;
     bool windowed = false;
     int screenIndex = -1;
     QString configPath;
-    QString profile = "demo";
+    QString profile = "live";
     bool profileProvided = false;
     bool debug = false;
-    QString originalModeArgument = "--configure";
+    QString originalModeArgument = "--live";
 };
 
 struct ParseResult {
@@ -32,6 +31,5 @@ struct ParseResult {
 
 ParseResult parseAppLaunchOptions(const QStringList& arguments);
 QString launchModeToString(LaunchMode mode);
-bool setupAvailable(const AppLaunchOptions& options);
 
 } // namespace cybershow

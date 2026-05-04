@@ -27,34 +27,6 @@ bool CyberNavigationController::focusIsEditable(QWidget* focusWidget) const {
     return false;
 }
 
-bool CyberNavigationController::handleSetupKeyPress(QKeyEvent* event, QWidget* focusWidget) {
-    if (!event || focusIsEditable(focusWidget)) return false;
-
-    switch (event->key()) {
-    case Qt::Key_Return:
-    case Qt::Key_Enter:
-    case Qt::Key_Space:
-    case Qt::Key_Right:
-    case Qt::Key_1:
-        emit startRequested();
-        return true;
-    case Qt::Key_F11:
-        emit fullscreenToggleRequested();
-        return true;
-    default:
-        break;
-    }
-
-    if (event->modifiers().testFlag(Qt::ControlModifier)) {
-        if (event->key() == Qt::Key_D && m_options.launchMode == LaunchMode::Configure && m_options.debug) {
-            emit debugOverlayToggleRequested();
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool CyberNavigationController::handleRuntimeKeyPress(QKeyEvent* event, QWidget* focusWidget) {
     if (!event || focusIsEditable(focusWidget)) return false;
 
@@ -66,7 +38,6 @@ bool CyberNavigationController::handleRuntimeKeyPress(QKeyEvent* event, QWidget*
         previousScreen();
         return true;
     case Qt::Key_Escape:
-        returnToSetupIfAllowed();
         return true;
     case Qt::Key_F11:
         emit fullscreenToggleRequested();
@@ -80,7 +51,7 @@ bool CyberNavigationController::handleRuntimeKeyPress(QKeyEvent* event, QWidget*
         return true;
     }
 
-    if (event->modifiers().testFlag(Qt::ControlModifier) && m_options.launchMode == LaunchMode::Configure) {
+    if (event->modifiers().testFlag(Qt::ControlModifier)) {
         if (event->key() == Qt::Key_D && m_options.debug) {
             emit debugOverlayToggleRequested();
             return true;
@@ -133,12 +104,6 @@ void CyberNavigationController::previousScreen() {
         }
     }
     // No circular navigation by default.
-}
-
-void CyberNavigationController::returnToSetupIfAllowed() {
-    if (setupAvailable(m_options)) {
-        emit setupRequested();
-    }
 }
 
 } // namespace cybershow

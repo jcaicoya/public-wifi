@@ -1407,9 +1407,6 @@ bool MainWindow::handleRuntimeKeyPress(QKeyEvent* event)
         }
         return false;
     case Qt::Key_Escape:
-        if (m_config.launchMode == ShowConfig::LaunchMode::Configure) {
-            emit setupRequested();
-        }
         return true;
     case Qt::Key_F9:
         setBottomNavVisible(!m_bottomNavVisible);
@@ -1492,9 +1489,6 @@ void MainWindow::updateControlStatusPanel()
     const QString operationMode = (m_config.mode == ShowConfig::Mode::Demo) ? "DEMO" : "LIVE";
     QString launchMode;
     switch (m_config.launchMode) {
-    case ShowConfig::LaunchMode::Configure:
-        launchMode = "CONFIGURACION";
-        break;
     case ShowConfig::LaunchMode::Demo:
         launchMode = "DEMO";
         break;

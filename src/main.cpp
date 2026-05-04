@@ -9,7 +9,6 @@
 #include <QMessageBox>
 #include <QScreen>
 #include <QWidget>
-#include "InitScreen.h"
 #include "MainWindow.h"
 #include "cybershow/common/CyberAppMode.h"
 #include "cybershow/common/CyberOrchestratorProtocol.h"
@@ -19,14 +18,12 @@
 static QString launchModeName(ShowConfig::LaunchMode mode)
 {
     switch (mode) {
-    case ShowConfig::LaunchMode::Configure:
-        return QStringLiteral("configure");
     case ShowConfig::LaunchMode::Demo:
         return QStringLiteral("demo");
     case ShowConfig::LaunchMode::Live:
         return QStringLiteral("live");
     }
-    return QStringLiteral("configure");
+    return QStringLiteral("demo");
 }
 
 // Returns an error description, or an empty string if everything is valid.
@@ -118,33 +115,13 @@ static ShowConfig configFromLaunchOptions(const cybershow::AppLaunchOptions& opt
         cfg.launchMode = ShowConfig::LaunchMode::Live;
         cfg.mode = ShowConfig::Mode::Normal;
         cfg.profile = "live";
-    } else if (options.launchMode == cybershow::LaunchMode::Demo) {
+    } else {
         cfg.launchMode = ShowConfig::LaunchMode::Demo;
         cfg.mode = ShowConfig::Mode::Demo;
         cfg.profile = "demo";
-    } else {
-        cfg.launchMode = ShowConfig::LaunchMode::Configure;
-        cfg.mode = ShowConfig::Mode::Normal;
-        cfg.profile = "live";
     }
 
     return cfg;
-}
-
-static void placeWindowOnRequestedScreen(QWidget& window, int screenIndex)
-{
-    if (screenIndex < 0) {
-        return;
-    }
-
-    const auto screens = QGuiApplication::screens();
-    if (screenIndex >= screens.size()) {
-        return;
-    }
-
-    const QRect available = screens.at(screenIndex)->availableGeometry();
-    window.setGeometry(available);
-    window.move(available.topLeft());
 }
 
 static QRect availableGeometryForScreenIndex(int screenIndex)
@@ -212,25 +189,6 @@ static void showMainWindow(MainWindow& window, const ShowConfig& config)
     }
 }
 
-static bool runSetup(ShowConfig& config, const cybershow::AppLaunchOptions& options)
-{
-    InitScreen initScreen;
-    initScreen.setConfig(config);
-    if (initScreen.exec() != QDialog::Accepted) {
-        return false;
-    }
-
-    config = initScreen.config();
-    config.launchMode = ShowConfig::LaunchMode::Configure;
-    config.originalModeArgument = options.originalModeArgument;
-    config.configPath = options.configPath;
-    config.screenIndex = options.screenIndex;
-    config.fullscreen = options.fullscreen;
-    config.windowed = options.windowed;
-    config.debug = options.debug;
-    return true;
-}
-
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -276,37 +234,17 @@ int main(int argc, char *argv[])
     app.setStyle("Fusion");
     app.setStyleSheet(CyberTheme::globalStyleSheet(uiScale));
 
-    bool shouldShowSetup = cybershow::setupAvailable(launchParse.options);
-    ShowConfig config = shouldShowSetup ? ShowConfig{} : configFromLaunchOptions(launchParse.options);
+    ShowConfig config = configFromLaunchOptions(launchParse.options);
 
-    while (true) {
-        if (shouldShowSetup && !runSetup(config, launchParse.options)) {
-            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("setup"), QStringLiteral("Setup cancelled by operator"));
-            return 0;
-        }
+    cybershow::OperationalLog::configure(launchModeName(config.launchMode), config.profile);
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Creating runtime window"));
 
-        cybershow::OperationalLog::configure(launchModeName(config.launchMode), config.profile);
-        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Creating runtime window"));
+    MainWindow window(config);
+    showMainWindow(window, config);
+    cybershow::OrchestratorProtocol::status("RUNNING");
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Runtime window shown"));
 
-        bool setupRequested = false;
-        MainWindow window(config);
-        QObject::connect(&window, &MainWindow::setupRequested, &app, [&]() {
-            setupRequested = true;
-            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Setup requested from runtime"));
-            window.close();
-            app.quit();
-        });
-
-        showMainWindow(window, config);
-        cybershow::OrchestratorProtocol::status("RUNNING");
-        cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QStringLiteral("Runtime window shown"));
-
-        const int result = app.exec();
-        if (!setupRequested) {
-            cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QString("Application exited with code %1").arg(result));
-            return result;
-        }
-
-        shouldShowSetup = true;
-    }
+    const int result = app.exec();
+    cybershow::OperationalLog::write(QStringLiteral("INFO"), QStringLiteral("runtime"), QString("Application exited with code %1").arg(result));
+    return result;
 }

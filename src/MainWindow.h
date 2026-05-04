@@ -45,9 +45,6 @@ public:
         Encryption
     };
 
-signals:
-    void setupRequested();
-
 protected:
     bool eventFilter(QObject* watched, QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;

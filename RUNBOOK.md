@@ -112,7 +112,7 @@ En esta pantalla:
 - `Left Arrow` / `Right Arrow`: moverse entre pantallas
 - `F9`: mostrar u ocultar la barra inferior
 - `F10`: mostrar u ocultar el indicador `DEMO` / `LIVE`
-- `Esc`: vuelve a Setup solo en `--configure`
+- `Esc`: no hace nada
 
 ## 7. Comandos SSH útiles
 

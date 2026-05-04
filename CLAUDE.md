@@ -4,13 +4,14 @@ Use this file as the working context for resuming the app with Claude, Codex, or
 
 ## Project Snapshot
 
-Public Wi-Fi Cybershow is a Qt stage application for public Wi-Fi privacy storytelling. It has five runtime screens, a setup screen, live and demo operating profiles, a fake portal, a map view, a risk profile, and a scripted encryption analysis sequence.
+Public Wi-Fi Cybershow is a Qt stage application for public Wi-Fi privacy storytelling. It has five runtime screens, live and demo operating profiles, a fake portal, a map view, a risk profile, and a scripted encryption analysis sequence.
 
 The current app is already refactored to the Cybershow standard:
 
-- Setup only appears in `--configure` or when no arguments are passed.
-- `--demo` skips Setup and enters runtime in demo mode.
-- `--live` skips Setup and enters runtime in live mode.
+- The app defaults to live mode when no launch mode is provided.
+- Launching with removed `--configure` fails clearly.
+- `--demo` enters runtime directly in demo mode.
+- `--live` enters runtime directly in live mode.
 - Runtime navigation uses `1-5`, arrows, and the bottom navigation bar.
 - `F9` toggles the bottom navigation bar.
 - `F10` toggles the `DEMO` / `LIVE` badge.
@@ -27,10 +28,10 @@ The current app is already refactored to the Cybershow standard:
 
 Launch modes:
 
-- no arguments -> `--configure`
-- `--configure` -> Setup
 - `--demo` -> runtime directly in demo mode
 - `--live` -> runtime directly in live mode
+- no arguments -> runtime directly in live mode
+- `--configure` -> startup error
 
 ## Screen Map
 
@@ -91,7 +92,7 @@ The log must not include credential values or raw traffic payloads.
 
 ## Current Constraints And Expectations
 
-- Keep the current functionality unless a change is needed for navigation, startup mode, setup, or visual structure.
+- Keep the current functionality unless a change is needed for navigation, startup mode, or visual structure.
 - Do not reintroduce automatic Demo screen switching.
 - Do not make the demo watermark selectable or focusable.
 - Keep Screen 5 as the only screen that resets when entered.
@@ -140,7 +141,6 @@ The packaged zip also includes `RUNBOOK.md` for show-day live-mode operation.
 ## Important Source Files
 
 - `src/main.cpp` - CLI parsing, validation, startup mode handling
-- `src/InitScreen.cpp` - setup screen
 - `src/MainWindow.cpp` - all five runtime screens, event flow, demo logic
 - `src/MapView.cpp` - map rendering and packet animation
 - `src/WifiPortalServer.cpp` - fake portal server
@@ -166,7 +166,7 @@ Public Wi-Fi is the reference operative app in this family. The layout should st
 ## What To Check Before Any Future Change
 
 - Does it preserve current runtime behavior?
-- Does it keep setup, show, and design modes consistent with the Cybershow standard?
+- Does it keep demo and live launch modes consistent with the Cybershow standard?
 - Does it break operator navigation?
 - Does it change live mode dependencies?
 - Does it alter the packaging workflow?

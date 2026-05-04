@@ -7,11 +7,13 @@ The app supports two operating profiles:
 - `live`: used with the router, portal, and SSH helpers
 - `demo`: fully simulated, no router required
 
-It also supports the Cybershow launch modes:
+The app supports these launch modes:
 
-- no arguments or `--configure`: open Setup
-- `--demo`: skip Setup and enter runtime in demo mode
-- `--live`: skip Setup and enter runtime in live mode
+- no arguments: enter runtime in live mode
+- `--demo`: enter runtime in demo mode
+- `--live`: enter runtime in live mode
+
+Launching with the removed `--configure` mode fails with a startup error.
 
 ## Screen Contract
 
@@ -23,20 +25,6 @@ It also supports the Cybershow launch modes:
 
 ## How To Operate It
 
-### Setup
-
-The setup screen is used to choose the operating profile and start the show.
-
-Accepted controls:
-
-- `Enter`
-- `Space`
-- `Right Arrow`
-- `1`
-- clicking the primary button
-
-During normal setup, these actions start the show. If a text field has focus, normal editing wins and the global shortcuts do not interfere.
-
 ### Runtime Navigation
 
 During execution the navigation is always operator-controlled:
@@ -44,7 +32,7 @@ During execution the navigation is always operator-controlled:
 - `1` to `5` jump to a screen
 - `Left Arrow` and `Right Arrow` move between screens
 - clicking the bottom navigation bar changes screens
-- `Esc` returns to Setup only in `--configure`
+- `Esc` does nothing
 - `F9` shows or hides the bottom navigation bar
 - `F10` shows or hides the `DEMO` / `LIVE` badge
 
@@ -117,7 +105,7 @@ Demo mode is self-contained:
 
 - The app must never show real personal data unless it is controlled, consented, or simulated.
 - Credential values and raw traffic payloads are not written to the operational log.
-- Setup is unavailable in `--demo` and `--live`.
+- Runtime launches in live mode by default, or in demo mode with `--demo`.
 - Screen changes and key runtime events are emitted through the Cybershow stdout protocol.
 - Operational logging goes to `logs/public-wifi.log`.
 
@@ -184,7 +172,6 @@ The app follows the Cybershow shared visual standard:
 - common bottom navigation
 - consistent panel styling
 - monospaced terminal areas
-- operable setup card
 - operative screens for dashboards, maps, logs, and analysis
 - scenic screens only where the effect is the point
 - screen-aware startup sizing and splitter weights for laptop and projector layouts

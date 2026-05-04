@@ -4,14 +4,14 @@
 
 struct ShowConfig
 {
-    enum class LaunchMode { Configure, Demo, Live };
+    enum class LaunchMode { Demo, Live };
     enum class Mode { Normal, Demo };
 
-    LaunchMode launchMode = LaunchMode::Configure;
+    LaunchMode launchMode = LaunchMode::Live;
     Mode mode        = Mode::Normal;
 
     QString profile = "live";
-    QString originalModeArgument = "--configure";
+    QString originalModeArgument = "--live";
     QString configPath;
     int screenIndex = -1;
     bool fullscreen = false;
