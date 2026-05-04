@@ -184,8 +184,9 @@ static void showMainWindow(MainWindow& window, const ShowConfig& config)
 {
     const QRect available = availableGeometryForScreenIndex(config.screenIndex);
     if (config.fullscreen) {
-        if (!available.isEmpty()) {
-            window.setGeometry(available);
+        const auto screens = QGuiApplication::screens();
+        if (config.screenIndex >= 0 && config.screenIndex < screens.size()) {
+            window.move(screens.at(config.screenIndex)->geometry().topLeft());
         }
         window.showFullScreen();
     } else if (config.windowed) {
